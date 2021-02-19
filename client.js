@@ -1,9 +1,9 @@
 const io = require("socket.io-client");
 const pty = require('node-pty');
-const socket = io('ws://runner.github-vsc.com');
+const socket = io('ws://runner.github-vsc.com:3000');
 
 socket.on("connect", () => {
-  console.log(socket.id);
+  console.log('connected', socket.id);
   socket.emit('client')
 });
 
