@@ -1,0 +1,12 @@
+{
+  "name": "github-vsc-runner",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "https://github.com/gao-sun/github-vsc-runner.git",
+  "author": "Gao Sun",
+  "license": "MIT",
+  "dependencies": {
+    "socket.io": "^3.1.1"
+  },
+  "devDependencies": {}
+}
