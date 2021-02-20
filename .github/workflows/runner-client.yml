@@ -2,7 +2,7 @@ name: Runner Client
 
 on:
   push:
-    branches: []
+    branches: [some-branch-not-reachable]
 
 jobs:
   main:

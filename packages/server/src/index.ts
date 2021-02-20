@@ -1,5 +1,6 @@
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
+import logger from './logger';
 
 const server = createServer();
 const io = new Server(server);
@@ -8,7 +9,7 @@ let runnerClient: Socket;
 let debugClient: Socket;
 
 io.on('connection', (client: Socket) => {
-  console.log('client connected', client.id);
+  logger.info('client connected %s', client.id);
 
   client.on('client', () => {
     console.log('received client');
@@ -33,4 +34,6 @@ io.on('connection', (client: Socket) => {
   });
 });
 
-server.listen(3000);
+const PORT = 3000;
+server.listen(PORT);
+logger.log('info', 'server is listening %d', PORT);
