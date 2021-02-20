@@ -1,10 +1,13 @@
-const server = require('http').createServer();
-const io = require('socket.io')(server);
+import { createServer } from 'http';
+import { Server, Socket } from 'socket.io';
 
-let runnerClient;
-let debugClient;
+const server = createServer();
+const io = new Server(server);
 
-io.on('connection', client => {
+let runnerClient: Socket;
+let debugClient: Socket;
+
+io.on('connection', (client: Socket) => {
   console.log('client connected', client.id);
 
   client.on('client', () => {
@@ -17,13 +20,13 @@ io.on('connection', client => {
     debugClient = client;
   });
 
-  client.on('cmd', data => {
+  client.on('cmd', (data: any) => {
     console.log('received cmd', data);
     runnerClient.emit('cmd', data);
   });
-  client.on('stdout', data => {
+  client.on('stdout', (data: any) => {
     console.log('received stdout', data);
-    debugClient && debugClient.emit('stdout', data)
+    debugClient && debugClient.emit('stdout', data);
   });
   client.on('disconnect', () => {
     console.log('client disconnected', client.id);

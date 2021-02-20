@@ -1,0 +1,21 @@
+{
+	"compilerOptions": {
+		"module": "commonjs",
+		"target": "ES6",
+		"outDir": "out",
+		"esModuleInterop": true,
+		"lib": [
+			"ESNext",
+			"ES2020",
+			"DOM"
+		],
+		"sourceMap": true,
+		"rootDir": "packages",
+		"strict": true,   /* enable all strict type-checking options */
+		"paths": {
+			"@server/*": ["./packages/server/*"],
+			"@client/*": ["./packages/client/*"]
+		},
+		"noFallthroughCasesInSwitch": true
+	}
+}

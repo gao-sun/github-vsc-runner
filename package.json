@@ -5,10 +5,8 @@
   "repository": "https://github.com/gao-sun/github-vsc-runner.git",
   "author": "Gao Sun",
   "license": "MIT",
-  "dependencies": {
-    "node-pty": "^0.10.0",
-    "socket.io": "^3.1.1",
-    "socket.io-client": "^3.1.1"
-  },
-  "devDependencies": {}
+  "dependencies": {},
+  "devDependencies": {
+    "lerna": "^3.22.1"
+  }
 }
