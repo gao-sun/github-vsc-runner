@@ -1,6 +1,6 @@
 {
   "name": "@github-vsc-runner/client",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "main": "lib/index.js",
   "publishConfig": {
     "access": "public"
@@ -28,7 +28,7 @@
     "winston": "^3.3.3"
   },
   "devDependencies": {
-    "@github-vsc-runner/core": "^1.0.0-alpha.1",
+    "@github-vsc-runner/core": "^1.0.0-alpha.2",
     "@github-vsc-runner/eslint-config": "^1.0.0-alpha.0",
     "@types/node": "^14.14.31",
     "@typescript-eslint/eslint-plugin": "^4.15.1",

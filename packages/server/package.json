@@ -1,6 +1,6 @@
 {
   "name": "@github-vsc-runner/server",
-  "version": "1.0.0-alpha.1",
+  "version": "1.0.0-alpha.2",
   "main": "lib/index.js",
   "publishConfig": {
     "access": "public"
@@ -22,7 +22,7 @@
     "prepublish": "yarn build"
   },
   "dependencies": {
-    "@github-vsc-runner/core": "^1.0.0-alpha.1",
+    "@github-vsc-runner/core": "^1.0.0-alpha.2",
     "socket.io": "^3.1.1",
     "winston": "^3.3.3"
   },
