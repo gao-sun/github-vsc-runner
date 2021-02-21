@@ -11,7 +11,7 @@
     "build": "tsc",
     "dev": "tsc-watch --onSuccess 'node ./lib/index.js'",
     "lint": "eslint src --ext ts",
-    "prepublish": "yarn && yarn buid"
+    "prepublish": "yarn build"
   },
   "dependencies": {
     "dotenv": "^8.2.0",
