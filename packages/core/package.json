@@ -1,5 +1,5 @@
 {
-  "name": "@github-vsc-runner/types",
+  "name": "@github-vsc-runner/core",
   "version": "0.0.0",
   "description": "> TODO: description",
   "author": "Gao Sun <gaosun.dev@gmail.com>",
@@ -18,7 +18,7 @@
   },
   "scripts": {
     "build": "tsc",
-    "watch": "tsc-watch --onSuccess 'node ./lib/index.js'",
+    "dev": "tsc-watch --onSuccess 'node ./lib/index.js'",
     "lint": "eslint src --ext ts"
   },
   "bugs": {

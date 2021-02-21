@@ -6,11 +6,11 @@
   "license": "MIT",
   "scripts": {
     "build": "tsc",
-    "watch": "tsc-watch --onSuccess 'node ./lib/index.js'",
+    "dev": "tsc-watch --onSuccess 'node ./lib/index.js'",
     "lint": "eslint src --ext ts"
   },
   "dependencies": {
-    "@github-vsc-runner/types": "../types",
+    "@github-vsc-runner/core": "../core",
     "socket.io": "^3.1.1",
     "winston": "^3.3.3"
   },

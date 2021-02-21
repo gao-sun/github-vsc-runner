@@ -12,17 +12,21 @@ export enum ClientType {
 
 export enum RunnerClientEvent {
   SetType = 'runner-client',
-  Stdout = 'runner-stdout',
+  Stdout = 'runner-client-stdout',
+  TerminalClosed = 'runner-client-terminal-closed',
 }
 
 export enum RunnerServerEvent {
-  RunnerStatus = 'runner-status',
+  RunnerStatus = 'server-runner-status',
 }
 
 export enum VscClientEvent {
   SetType = 'vsc-client',
+  ActivateTerminal = 'vsc-activate-terminal',
   Cmd = 'vsc-cmd',
   CheckRunnerStatus = 'vsc-check-runner-status',
+  TerminateRunner = 'vsc-terminate-runner',
+  ClientDisconnected = 'vsc-client-disconnected',
 }
 
 export type Client = {
@@ -32,3 +36,12 @@ export type Client = {
 };
 
 export type FulfilledClient = Required<Client>;
+
+export type TerminalDimensions = {
+  rows: number;
+  cols: number;
+};
+
+export type TerminalOptions = TerminalDimensions & {
+  file: string;
+};
