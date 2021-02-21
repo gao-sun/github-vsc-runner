@@ -20,7 +20,7 @@
     "build": "tsc",
     "dev": "tsc-watch --onSuccess 'node ./lib/index.js'",
     "lint": "eslint src --ext ts",
-    "prepublish": "yarn buid"
+    "prepublish": "yarn && yarn buid"
   },
   "bugs": {
     "url": "https://github.com/gao-sun/github-vsc-runner/issues"
