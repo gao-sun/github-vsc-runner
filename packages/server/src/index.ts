@@ -1,39 +1,16 @@
 import { createServer } from 'http';
 import { Server, Socket } from 'socket.io';
+import {
+  Client,
+  ClientType,
+  FulfilledClient,
+  RunnerClientEvent,
+  RunnerClientStatus,
+  RunnerServerEvent,
+  VscClientEvent,
+} from '@github-vsc-runner/types';
+
 import logger from './logger';
-
-enum RunnerClientStatus {
-  Online = 'Online',
-  Offline = 'Offline',
-}
-
-enum ClientType {
-  Runner = 'Runner',
-  VSC = 'VSCode',
-}
-
-enum RunnerClientEvent {
-  SetType = 'runner-client',
-  Stdout = 'runner-stdout',
-}
-
-enum RunnerServerEvent {
-  RunnerStatus = 'runner-status',
-}
-
-enum VscClientEvent {
-  SetType = 'vsc-client',
-  Cmd = 'vsc-cmd',
-  CheckRunnerStatus = 'vsc-check-runner-status',
-}
-
-type Client = {
-  socket: Socket;
-  sessionId?: string;
-  type?: ClientType;
-};
-
-type FulfilledClient = Required<Client>;
 
 const server = createServer();
 const io = new Server(server);
