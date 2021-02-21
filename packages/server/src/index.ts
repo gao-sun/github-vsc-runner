@@ -89,6 +89,12 @@ io.on('connection', (socket: Socket) => {
     if (clientType === ClientType.VSC) {
       client.sessionId = sessionId;
       client.type = clientType;
+
+      if (sessionIdToVscClientIds[sessionId]?.includes(socket.id)) {
+        logger.warn('%s for session %s alreays exists, skipping', clientType, sessionId);
+        return;
+      }
+
       sessionIdToVscClientIds[sessionId] = (sessionIdToVscClientIds[sessionId] ?? []).concat(
         socket.id,
       );
