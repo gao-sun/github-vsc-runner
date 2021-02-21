@@ -6,3 +6,4 @@ dist/
 lib/
 vscode/
 yarn-error.log
+lerna-debug.log
