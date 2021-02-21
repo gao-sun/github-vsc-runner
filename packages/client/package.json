@@ -4,6 +4,9 @@
   "main": "lib/index.js",
   "author": "Gao Sun",
   "license": "MIT",
+  "files": [
+    "lib"
+  ],
   "scripts": {
     "build": "tsc",
     "dev": "tsc-watch --onSuccess 'node ./lib/index.js'",
