@@ -10,7 +10,8 @@
   "scripts": {
     "build": "tsc",
     "dev": "tsc-watch --onSuccess 'node ./lib/index.js'",
-    "lint": "eslint src --ext ts"
+    "lint": "eslint src --ext ts",
+    "prepublish": "yarn buid"
   },
   "dependencies": {
     "@github-vsc-runner/core": "../core",
