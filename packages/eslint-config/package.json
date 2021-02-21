@@ -1,6 +1,6 @@
 {
   "name": "@github-vsc-runner/eslint-config",
-  "version": "0.0.0",
+  "version": "1.0.0-alpha.0",
   "description": "",
   "author": "Gao Sun",
   "homepage": "https://github.com/gao-sun/github-vsc-runner#readme",
@@ -22,9 +22,9 @@
   "peerDependencies": {
     "@typescript-eslint/eslint-plugin": "^4.15.1",
     "@typescript-eslint/parser": "^4.15.1",
+    "eslint": "^7.20.0",
     "eslint-config-prettier": "^7.2.0",
     "eslint-plugin-prettier": "^3.3.1",
-    "eslint": "^7.20.0",
     "prettier": "^2.2.1",
     "typescript": "^4.1.5"
   }
