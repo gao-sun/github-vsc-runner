@@ -22,7 +22,8 @@
     "prepublish": "yarn build"
   },
   "dependencies": {
-    "@github-vsc-runner/core": "^1.0.0-alpha.2",
+    "@github-vsc-runner/core": "../core",
+    "nanoid": "^3.1.20",
     "socket.io": "^3.1.1",
     "winston": "^3.3.3"
   },

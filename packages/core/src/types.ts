@@ -1,5 +1,8 @@
 import { Socket } from 'socket.io';
 
+export type Optional<T> = T | undefined;
+export type Dictionary<K extends string | number | symbol, V> = { [key in K]: Optional<V> };
+
 export enum RunnerClientStatus {
   Online = 'Online',
   Offline = 'Offline',
@@ -18,15 +21,16 @@ export enum RunnerClientEvent {
 
 export enum RunnerServerEvent {
   RunnerStatus = 'server-runner-status',
+  SessionCreated = 'server-session-created',
 }
 
 export enum VscClientEvent {
   SetType = 'vsc-client',
+  TerminateSession = 'vsc-terminate-session',
   ActivateTerminal = 'vsc-activate-terminal',
+  CloseTerminal = 'vsc-close-terminal',
   Cmd = 'vsc-cmd',
   CheckRunnerStatus = 'vsc-check-runner-status',
-  TerminateRunner = 'vsc-terminate-runner',
-  ClientDisconnected = 'vsc-client-disconnected',
 }
 
 export type Client = {
@@ -43,5 +47,11 @@ export type TerminalDimensions = {
 };
 
 export type TerminalOptions = TerminalDimensions & {
+  id: string;
   file: string;
+};
+
+export type Session = {
+  id: string;
+  clientDict: Dictionary<ClientType, Socket>;
 };

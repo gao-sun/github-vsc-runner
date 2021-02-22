@@ -49,10 +49,12 @@
     strip-json-comments "^3.1.1"
 
 "@github-vsc-runner/core@../core":
-  version "0.0.0"
+  version "1.0.0-alpha.2"
 
-"@github-vsc-runner/eslint-config@../eslint-config":
-  version "0.0.0"
+"@github-vsc-runner/eslint-config@^1.0.0-alpha.0":
+  version "1.0.0-alpha.0"
+  resolved "https://registry.yarnpkg.com/@github-vsc-runner/eslint-config/-/eslint-config-1.0.0-alpha.0.tgz#08cd1157bff1a5bf6460d81c52731efe35c277b2"
+  integrity sha512-wEIvI8R4ZWFcKRl0Iev8Iqf0uJDzPoIG+7SKRndn3F4wt8CgNJnmwRyVhBI6uCVz79iuCZv/UszDcIeEvF3aUQ==
 
 "@nodelib/fs.scandir@2.1.4":
   version "2.1.4"

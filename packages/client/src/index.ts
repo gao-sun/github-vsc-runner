@@ -7,8 +7,7 @@ import logger from './logger';
 
 dotenv.config();
 
-type Terminal = {
-  forClientId: string;
+type Terminal = TerminalOptions & {
   ptyProcess: pty.IPty;
 };
 
@@ -23,10 +22,10 @@ const runner: Runner = {
   terminals: [],
 };
 
-const closeTerminal = ({ ptyProcess, forClientId }: Terminal, removeFromRunner = true) => {
-  ptyProcess.kill();
+const closeTerminal = (terminal: Terminal, removeFromRunner = true) => {
+  terminal.ptyProcess.kill();
   if (removeFromRunner) {
-    runner.terminals = runner.terminals.filter((terminal) => terminal.forClientId === forClientId);
+    runner.terminals = runner.terminals.filter(({ id }) => id === terminal.id);
   }
 };
 
@@ -43,60 +42,57 @@ socket.on('disconnect', () => {
   runner.terminals = [];
 });
 
-socket.on(
-  VscClientEvent.ActivateTerminal,
-  (forClientId: string, options?: Partial<TerminalOptions>) => {
-    logger.info('activating terminal for client %s with options:', forClientId);
-    logger.info(JSON.stringify(options, undefined, 2));
+socket.on(VscClientEvent.ActivateTerminal, (options: TerminalOptions) => {
+  logger.info('activating terminal with options:');
+  logger.info(JSON.stringify(options, undefined, 2));
 
-    const { file, rows, cols } = options ?? {};
-    const ptyProcess = pty.spawn(file || 'zsh', [], {
-      name: 'runner-terminal',
-      cols: cols || 80,
-      rows: rows || 30,
-      cwd: process.env.HOME,
-      env: process.env as Record<string, string>,
-    });
-    const terminal: Terminal = { forClientId, ptyProcess };
+  const { id, file, rows, cols } = options;
+  const ptyProcess = pty.spawn(file || 'zsh', [], {
+    name: 'runner-terminal',
+    cols: cols || 80,
+    rows: rows || 30,
+    cwd: process.env.HOME,
+    env: process.env as Record<string, string>,
+  });
+  const terminal: Terminal = { ...options, ptyProcess };
 
-    ptyProcess.onData((data) => {
-      logger.verbose('pty received data');
-      socket.emit(RunnerClientEvent.Stdout, forClientId, data);
-    });
+  ptyProcess.onData((data) => {
+    logger.verbose('pty received data');
+    socket.emit(RunnerClientEvent.Stdout, id, data);
+  });
 
-    ptyProcess.onExit(() => {
-      socket.emit(RunnerClientEvent.TerminalClosed, forClientId);
-    });
+  ptyProcess.onExit(() => {
+    socket.emit(RunnerClientEvent.TerminalClosed, id);
+  });
 
-    runner.terminals.push(terminal);
-  },
-);
+  runner.terminals.push(terminal);
+});
 
-socket.on(VscClientEvent.Cmd, (forClientId: string, data: unknown) => {
+socket.on(VscClientEvent.Cmd, (terminalId: string, data: unknown) => {
   logger.verbose('on vsc client command %s', String(data));
-  const terminal = runner.terminals.find((terminal) => terminal.forClientId === forClientId);
+  const terminal = runner.terminals.find(({ id }) => id === terminalId);
 
   if (!terminal) {
-    logger.warn('no active pty process for client id %s, skipping', forClientId);
+    logger.warn('no active pty process for terminal id %s, skipping', terminalId);
     return;
   }
 
   terminal.ptyProcess.write(String(data));
 });
 
-socket.on(VscClientEvent.ClientDisconnected, (forClientId: string) => {
-  const terminal = runner.terminals.find((terminal) => terminal.forClientId === forClientId);
+socket.on(VscClientEvent.CloseTerminal, (terminalId: string) => {
+  const terminal = runner.terminals.find(({ id }) => id === terminalId);
 
   if (!terminal) {
-    logger.warn('cannot find terminal for client %s, skipping', forClientId);
+    logger.warn('cannot find terminal %s, skipping', terminalId);
     return;
   }
 
-  logger.warn('vsc client %s disconnected, closing terminal', forClientId);
+  logger.warn('closing terminal %s', terminalId);
   closeTerminal(terminal);
 });
 
-socket.on(VscClientEvent.TerminateRunner, () => {
+socket.on(VscClientEvent.TerminateSession, () => {
   logger.warn('received termination request');
   socket.disconnect();
   process.exit(0);

@@ -11,16 +11,23 @@ import {
   RunnerClientStatus,
   RunnerServerEvent,
   VscClientEvent,
+  Session,
 } from '@github-vsc-runner/core';
 
 import logger from './logger';
+import { customAlphabet } from 'nanoid';
 
+const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 21);
 const server = createServer();
 const io = new Server(server, { cors: { origin: ['http://localhost:8080'] } });
 
+const pairedClientType: Record<ClientType, ClientType> = Object.freeze({
+  [ClientType.Runner]: ClientType.VSC,
+  [ClientType.VSC]: ClientType.Runner,
+});
+
 const clientDict: Dictionary<string, Client> = {};
-const sessionIdToRunnerClientId: Dictionary<string, string> = {};
-const sessionIdToVscClientIds: Dictionary<string, string[]> = {};
+const sessionDict: Dictionary<string, Session> = {};
 
 const isClientAndEventTypeMatching = (
   clientType: ClientType,
@@ -75,73 +82,57 @@ io.on('connection', (socket: Socket) => {
       return;
     }
 
-    if (clientType === ClientType.Runner) {
-      if (sessionIdToRunnerClientId[sessionId]) {
-        logger.warn('%s for session %s alreays exists, skipping', clientType, sessionId);
-        return;
-      }
-      client.sessionId = sessionId;
-      client.type = clientType;
-      sessionIdToRunnerClientId[sessionId] = socket.id;
+    const session = sessionDict[sessionId];
+    if (!session) {
+      logger.warn('session %s does not exist or has been killed, skipping', sessionId);
       return;
     }
 
-    if (clientType === ClientType.VSC) {
-      client.sessionId = sessionId;
-      client.type = clientType;
+    if (session.clientDict[clientType]) {
+      logger.warn('%s for session %s alreays exists, skipping', clientType, sessionId);
+      return;
+    }
 
-      if (sessionIdToVscClientIds[sessionId]?.includes(socket.id)) {
-        logger.warn('%s for session %s alreays exists, skipping', clientType, sessionId);
-        return;
-      }
+    client.sessionId = sessionId;
+    client.type = clientType;
+    session.clientDict[clientType] = socket;
+  };
 
-      sessionIdToVscClientIds[sessionId] = (sessionIdToVscClientIds[sessionId] ?? []).concat(
-        socket.id,
+  const emitEventToPairedClient = <T extends unknown[]>(
+    event: RunnerClientEvent | VscClientEvent,
+    ...data: T
+  ) => {
+    if (!isEventValid(client, event)) {
+      logger.warn('%s is invalid for %s client %s, skipping', event, client.type, socket.id);
+      return;
+    }
+
+    if (!client.sessionId) {
+      logger.warn('session id for client %s not found, skipping', socket.id);
+      return;
+    }
+
+    const session = sessionDict[client.sessionId];
+
+    if (!session) {
+      logger.warn('session %s is not active, skipping', client.sessionId);
+      return;
+    }
+
+    const pairedType = pairedClientType[client.type];
+    const pairedClient = session.clientDict[pairedType];
+
+    if (!pairedClient) {
+      logger.warn(
+        'paired %s client for session %s not found, skipping',
+        pairedType,
+        client.sessionId,
       );
       return;
     }
 
-    logger.warn('%s is invalid for session %s, skipping', clientType, sessionId);
-  };
-
-  const emitEventToVscClient = <T extends unknown[]>(
-    event: RunnerClientEvent | RunnerServerEvent,
-    targetId?: string,
-    ...data: T
-  ) => {
-    if (!isEventValid(client, event)) {
-      logger.warn('%s is invalid for %s client %s, skipping', event, client.type, socket.id);
-      return;
-    }
-
-    sessionIdToVscClientIds[client.sessionId]?.forEach((clientId) => {
-      if (!targetId || targetId === clientId) {
-        logger.verbose(
-          '[session: %s] emit event %s to paired client %s',
-          client.sessionId,
-          event,
-          clientId,
-        );
-        clientDict[clientId]?.socket.emit(event, ...data);
-      }
-    });
-  };
-
-  const emitEventToRunnerClient = <T extends unknown[]>(
-    event: VscClientEvent | RunnerServerEvent,
-    ...data: T
-  ) => {
-    if (!isEventValid(client, event)) {
-      logger.warn('%s is invalid for %s client %s, skipping', event, client.type, socket.id);
-      return;
-    }
-
-    const pairedClientId = sessionIdToRunnerClientId[client.sessionId];
-    if (!pairedClientId) {
-      logger.warn('session id not found, skipping');
-      return;
-    }
-    clientDict[pairedClientId]?.socket.emit(event, socket.id, ...data);
+    logger.verbose('[session %s] emit event %s from %s to %s', session.id, client.type, pairedType);
+    pairedClient.emit(event, ...data);
   };
 
   socket.on(RunnerClientEvent.SetType, (sessionId: string) => {
@@ -149,20 +140,37 @@ io.on('connection', (socket: Socket) => {
     setClientType(sessionId, ClientType.Runner);
   });
 
-  socket.on(VscClientEvent.SetType, (sessionId: string) => {
+  socket.on(VscClientEvent.SetType, (sessionId?: string) => {
+    if (!sessionId) {
+      if (client.sessionId) {
+        logger.info('session already started for %s, skipping', socket.id);
+        return;
+      }
+
+      logger.info('received vsc client with new session request');
+
+      const id = nanoid();
+      sessionDict[id] = {
+        id,
+        clientDict: {} as Dictionary<ClientType, Socket>,
+      };
+      setClientType(id, ClientType.VSC);
+      return;
+    }
+
     logger.info('received vsc client for session %s', sessionId);
     setClientType(sessionId, ClientType.VSC);
   });
 
-  [VscClientEvent.Cmd, VscClientEvent.ActivateTerminal].forEach((event) => {
+  [
+    VscClientEvent.Cmd,
+    VscClientEvent.ActivateTerminal,
+    VscClientEvent.CloseTerminal,
+    RunnerClientEvent.Stdout,
+    RunnerClientEvent.TerminalClosed,
+  ].forEach((event) => {
     socket.on(event, (...data: unknown[]) => {
-      emitEventToRunnerClient(event, ...data);
-    });
-  });
-
-  [RunnerClientEvent.Stdout, RunnerClientEvent.TerminalClosed].forEach((event) => {
-    socket.on(event, (targetId?: string, ...data: unknown[]) => {
-      emitEventToVscClient(event, targetId, ...data);
+      emitEventToPairedClient(event, ...data);
     });
   });
 
@@ -173,10 +181,20 @@ io.on('connection', (socket: Socket) => {
 
     socket.emit(
       RunnerServerEvent.RunnerStatus,
-      sessionIdToRunnerClientId[client.sessionId]
+      sessionDict[client.sessionId]?.clientDict[ClientType.Runner]
         ? RunnerClientStatus.Online
         : RunnerClientStatus.Offline,
     );
+  });
+
+  socket.on(VscClientEvent.TerminateSession, () => {
+    if (!isEventValid(client, VscClientEvent.TerminateSession)) {
+      return;
+    }
+
+    logger.warn('vsc client requested to terminate session', client.sessionId);
+    emitEventToPairedClient(VscClientEvent.TerminateSession);
+    delete sessionDict[client.sessionId];
   });
 
   socket.on('disconnect', () => {
@@ -185,19 +203,19 @@ io.on('connection', (socket: Socket) => {
     if (client.type && client.sessionId) {
       logger.info('removing session %s to client %s id mapping', client.sessionId, client.type);
 
-      if (client.type === ClientType.Runner) {
-        delete sessionIdToRunnerClientId[client.sessionId];
-        delete sessionIdToVscClientIds[client.sessionId];
-        emitEventToVscClient(RunnerClientEvent.TerminalClosed);
-      }
+      const session = sessionDict[client.sessionId];
 
-      if (client.type === ClientType.VSC) {
-        if (sessionIdToVscClientIds[client.sessionId]) {
-          sessionIdToVscClientIds[client.sessionId] = sessionIdToVscClientIds[
-            client.sessionId
-          ]?.filter((clientId) => clientId === socket.id);
+      if (session) {
+        delete session.clientDict[client.type];
+
+        if (client.type === ClientType.Runner) {
+          logger.warn('runner client disconnected, terminating session');
+          session.clientDict[pairedClientType[ClientType.Runner]]?.emit(
+            RunnerServerEvent.RunnerStatus,
+            RunnerClientStatus.Offline,
+          );
+          delete sessionDict[client.sessionId];
         }
-        emitEventToRunnerClient(VscClientEvent.ClientDisconnected, socket.id);
       }
     }
 
