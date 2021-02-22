@@ -1,7 +1,13 @@
 import { io, Socket } from 'socket.io-client';
 import * as pty from 'node-pty';
 import dotenv from 'dotenv';
-import { RunnerClientEvent, TerminalOptions, VscClientEvent } from '@github-vsc-runner/core';
+import {
+  Optional,
+  RunnerClientEvent,
+  TerminalDimensions,
+  TerminalOptions,
+  VscClientEvent,
+} from '@github-vsc-runner/core';
 
 import logger from './logger';
 
@@ -20,6 +26,27 @@ const socket = io(process.env.SERVER_ADDRESS || 'ws://localhost:3000');
 const runner: Runner = {
   socket,
   terminals: [],
+};
+
+const getTerminalById = (terminalId: string): Optional<Terminal> => {
+  const terminal = runner.terminals.find(({ id }) => id === terminalId);
+  if (!terminal) {
+    logger.warn('cannot find terminal %s, skipping', terminalId);
+  }
+  return terminal;
+};
+
+const getTerminalPtyProcessById = (terminalId: string): Optional<pty.IPty> => {
+  const terminal = getTerminalById(terminalId);
+  if (!terminal) {
+    return;
+  }
+
+  if (!terminal.ptyProcess) {
+    logger.warn('no active pty process for terminal id %s, skipping', terminalId);
+    return;
+  }
+  return terminal.ptyProcess;
 };
 
 const closeTerminal = (terminal: Terminal, removeFromRunner = true) => {
@@ -68,23 +95,41 @@ socket.on(VscClientEvent.ActivateTerminal, (options: TerminalOptions) => {
   runner.terminals.push(terminal);
 });
 
+socket.on(VscClientEvent.FetchCurrentTerminals, () => {
+  socket.emit(
+    RunnerClientEvent.CurrentTerminals,
+    runner.terminals.map(({ ptyProcess, ...rest }) => rest),
+  );
+});
+
 socket.on(VscClientEvent.Cmd, (terminalId: string, data: unknown) => {
   logger.verbose('on vsc client command %s', String(data));
-  const terminal = runner.terminals.find(({ id }) => id === terminalId);
 
-  if (!terminal) {
-    logger.warn('no active pty process for terminal id %s, skipping', terminalId);
+  const ptyProcess = getTerminalPtyProcessById(terminalId);
+  if (!ptyProcess) {
     return;
   }
 
-  terminal.ptyProcess.write(String(data));
+  ptyProcess.write(String(data));
 });
 
+socket.on(
+  VscClientEvent.SetTerminalDimensions,
+  (terminalId: string, { cols, rows }: TerminalDimensions) => {
+    const ptyProcess = getTerminalPtyProcessById(terminalId);
+    if (!ptyProcess) {
+      return;
+    }
+
+    logger.warn('setting terminal %s dimensions', terminalId);
+    ptyProcess.resize(cols, rows);
+  },
+);
+
 socket.on(VscClientEvent.CloseTerminal, (terminalId: string) => {
-  const terminal = runner.terminals.find(({ id }) => id === terminalId);
+  const terminal = getTerminalById(terminalId);
 
   if (!terminal) {
-    logger.warn('cannot find terminal %s, skipping', terminalId);
     return;
   }
 

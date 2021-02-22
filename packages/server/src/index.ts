@@ -12,6 +12,7 @@ import {
   RunnerServerEvent,
   VscClientEvent,
   Session,
+  Dictionary,
 } from '@github-vsc-runner/core';
 
 import logger from './logger';
@@ -96,6 +97,10 @@ io.on('connection', (socket: Socket) => {
     client.sessionId = sessionId;
     client.type = clientType;
     session.clientDict[clientType] = socket;
+
+    if (clientType === ClientType.VSC) {
+      socket.emit(RunnerServerEvent.SessionStarted, sessionId);
+    }
   };
 
   const emitEventToPairedClient = <T extends unknown[]>(
@@ -147,14 +152,18 @@ io.on('connection', (socket: Socket) => {
         return;
       }
 
-      logger.info('received vsc client with new session request');
+      logger.info('received vsc client %s with new session request', socket.id);
 
       const id = nanoid();
       sessionDict[id] = {
         id,
         clientDict: {} as Dictionary<ClientType, Socket>,
       };
+
       setClientType(id, ClientType.VSC);
+      logger.info('created new session %s', id);
+      socket.emit(RunnerServerEvent.SessionStarted, id);
+
       return;
     }
 
@@ -166,7 +175,10 @@ io.on('connection', (socket: Socket) => {
     VscClientEvent.Cmd,
     VscClientEvent.ActivateTerminal,
     VscClientEvent.CloseTerminal,
+    VscClientEvent.FetchCurrentTerminals,
+    VscClientEvent.SetTerminalDimensions,
     RunnerClientEvent.Stdout,
+    RunnerClientEvent.CurrentTerminals,
     RunnerClientEvent.TerminalClosed,
   ].forEach((event) => {
     socket.on(event, (...data: unknown[]) => {

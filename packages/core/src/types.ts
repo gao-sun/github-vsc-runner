@@ -17,17 +17,20 @@ export enum RunnerClientEvent {
   SetType = 'runner-client',
   Stdout = 'runner-client-stdout',
   TerminalClosed = 'runner-client-terminal-closed',
+  CurrentTerminals = 'runner-current-terminals',
 }
 
 export enum RunnerServerEvent {
   RunnerStatus = 'server-runner-status',
-  SessionCreated = 'server-session-created',
+  SessionStarted = 'server-session-started',
 }
 
 export enum VscClientEvent {
   SetType = 'vsc-client',
   TerminateSession = 'vsc-terminate-session',
   ActivateTerminal = 'vsc-activate-terminal',
+  FetchCurrentTerminals = 'vsc-fetch-current-terminals',
+  SetTerminalDimensions = 'vsc-set-terminal-dimensions',
   CloseTerminal = 'vsc-close-terminal',
   Cmd = 'vsc-cmd',
   CheckRunnerStatus = 'vsc-check-runner-status',
