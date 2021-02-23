@@ -143,6 +143,10 @@ io.on('connection', (socket: Socket) => {
   socket.on(RunnerClientEvent.SetType, (sessionId: string) => {
     logger.info('received runner client for session %s', sessionId);
     setClientType(sessionId, ClientType.Runner);
+    sessionDict[sessionId]?.clientDict[ClientType.VSC]?.emit(
+      RunnerServerEvent.RunnerStatus,
+      RunnerClientStatus.Online,
+    );
   });
 
   socket.on(VscClientEvent.SetType, (sessionId?: string) => {
