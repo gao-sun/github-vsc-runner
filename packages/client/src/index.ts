@@ -49,11 +49,8 @@ const getTerminalPtyProcessById = (terminalId: string): Optional<pty.IPty> => {
   return terminal.ptyProcess;
 };
 
-const closeTerminal = (terminal: Terminal, removeFromRunner = true) => {
+const closeTerminal = (terminal: Terminal) => {
   terminal.ptyProcess.kill();
-  if (removeFromRunner) {
-    runner.terminals = runner.terminals.filter(({ id }) => id === terminal.id);
-  }
 };
 
 logger.info('runner client started');
@@ -65,8 +62,7 @@ socket.on('connect', () => {
 
 socket.on('disconnect', () => {
   logger.warn('disconnected');
-  runner.terminals.forEach((terminal) => closeTerminal(terminal, false));
-  runner.terminals = [];
+  runner.terminals.forEach((terminal) => closeTerminal(terminal));
 });
 
 socket.on(VscClientEvent.ActivateTerminal, (options: TerminalOptions) => {
@@ -84,11 +80,13 @@ socket.on(VscClientEvent.ActivateTerminal, (options: TerminalOptions) => {
   const terminal: Terminal = { ...options, ptyProcess };
 
   ptyProcess.onData((data) => {
-    logger.verbose('pty received data');
+    logger.verbose('pty received data', data);
     socket.emit(RunnerClientEvent.Stdout, id, data);
   });
 
   ptyProcess.onExit(() => {
+    logger.warn('pty for terminal %s on exit', id);
+    runner.terminals = runner.terminals.filter(({ id }) => id !== terminal.id);
     socket.emit(RunnerClientEvent.TerminalClosed, id);
   });
 
@@ -121,7 +119,7 @@ socket.on(
       return;
     }
 
-    logger.warn('setting terminal %s dimensions', terminalId);
+    logger.info('setting terminal %s dimensions', terminalId);
     ptyProcess.resize(cols, rows);
   },
 );
