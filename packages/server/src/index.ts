@@ -13,6 +13,7 @@ import {
   VscClientEvent,
   Session,
   Dictionary,
+  RunnerClientOS,
 } from '@github-vsc-runner/core';
 
 import logger from './logger';
@@ -77,7 +78,7 @@ io.on('connection', (socket: Socket) => {
   const client: Client = { socket };
   clientDict[socket.id] = client;
 
-  const setClientType = (sessionId: string, clientType: ClientType) => {
+  const setClientType = (sessionId: string, clientType: ClientType, clientOS?: RunnerClientOS) => {
     if (client.type) {
       logger.warn('type for client %s already exists, skipping', client.socket.id);
       return;
@@ -97,6 +98,7 @@ io.on('connection', (socket: Socket) => {
     client.sessionId = sessionId;
     client.type = clientType;
     session.clientDict[clientType] = socket;
+    session.clientOSDict[clientType] = clientOS;
 
     if (clientType === ClientType.VSC) {
       socket.emit(RunnerServerEvent.SessionStarted, sessionId);
@@ -140,13 +142,26 @@ io.on('connection', (socket: Socket) => {
     pairedClient.emit(event, ...data);
   };
 
-  socket.on(RunnerClientEvent.SetType, (sessionId: string) => {
-    logger.info('received runner client for session %s', sessionId);
-    setClientType(sessionId, ClientType.Runner);
-    sessionDict[sessionId]?.clientDict[ClientType.VSC]?.emit(
+  const emitRunnerClientStatus = (sessionId: string) => {
+    const session = sessionDict[sessionId];
+
+    if (!session) {
+      return;
+    }
+
+    session.clientDict[ClientType.VSC]?.emit(
       RunnerServerEvent.RunnerStatus,
-      RunnerClientStatus.Online,
+      session.clientDict[ClientType.Runner]
+        ? RunnerClientStatus.Online
+        : RunnerClientStatus.Offline,
+      session.clientOSDict[ClientType.Runner],
     );
+  };
+
+  socket.on(RunnerClientEvent.SetType, (sessionId: string, clientOS: RunnerClientOS) => {
+    logger.info('received runner client for session %s', sessionId);
+    setClientType(sessionId, ClientType.Runner, clientOS);
+    emitRunnerClientStatus(sessionId);
   });
 
   socket.on(VscClientEvent.SetType, (sessionId?: string) => {
@@ -162,11 +177,11 @@ io.on('connection', (socket: Socket) => {
       sessionDict[id] = {
         id,
         clientDict: {} as Dictionary<ClientType, Socket>,
+        clientOSDict: {} as Dictionary<ClientType, RunnerClientOS>,
       };
 
       setClientType(id, ClientType.VSC);
       logger.info('created new session %s', id);
-      socket.emit(RunnerServerEvent.SessionStarted, id);
 
       return;
     }
@@ -195,12 +210,7 @@ io.on('connection', (socket: Socket) => {
       return;
     }
 
-    socket.emit(
-      RunnerServerEvent.RunnerStatus,
-      sessionDict[client.sessionId]?.clientDict[ClientType.Runner]
-        ? RunnerClientStatus.Online
-        : RunnerClientStatus.Offline,
-    );
+    emitRunnerClientStatus(client.sessionId);
   });
 
   socket.on(VscClientEvent.TerminateSession, () => {

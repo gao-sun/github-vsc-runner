@@ -20,6 +20,12 @@ export enum RunnerClientEvent {
   CurrentTerminals = 'runner-current-terminals',
 }
 
+export enum RunnerClientOS {
+  Ubuntu = 'Ubuntu',
+  macOS = 'macOS',
+  Windows = 'Windows',
+}
+
 export enum RunnerServerEvent {
   RunnerStatus = 'server-runner-status',
   SessionStarted = 'server-session-started',
@@ -57,4 +63,5 @@ export type TerminalOptions = TerminalDimensions & {
 export type Session = {
   id: string;
   clientDict: Dictionary<ClientType, Socket>;
+  clientOSDict: Dictionary<ClientType, RunnerClientOS>;
 };

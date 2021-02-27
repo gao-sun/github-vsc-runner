@@ -57,7 +57,7 @@ logger.info('runner client started');
 
 socket.on('connect', () => {
   logger.info('connected to runner server with id: %s', socket.id);
-  socket.emit(RunnerClientEvent.SetType, process.env.SESSION_ID);
+  socket.emit(RunnerClientEvent.SetType, process.env.SESSION_ID, process.env.SESSION_OS);
 });
 
 socket.on('disconnect', () => {
