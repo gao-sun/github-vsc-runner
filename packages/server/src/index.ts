@@ -1,4 +1,5 @@
 import { createServer } from 'https';
+import dotenv from 'dotenv';
 import { Server, Socket } from 'socket.io';
 import {
   Client,
@@ -20,11 +21,15 @@ import logger from './logger';
 import { customAlphabet } from 'nanoid';
 import { readFileSync } from 'fs';
 
+dotenv.config();
+
+const { SERVER_PORT, SSL_KEY_PATH, SSL_CERT_PATH } = process.env;
+
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 21);
 const server = createServer(
   {
-    key: readFileSync('./cert/github-vsc.pem'),
-    cert: readFileSync('./cert/github-vsc.crt'),
+    key: readFileSync(SSL_KEY_PATH || './cert/github-vsc.pem'),
+    cert: readFileSync(SSL_CERT_PATH || './cert/github-vsc.crt'),
   },
   (req, res) => {
     logger.info('request from %s', req.socket.remoteAddress);
@@ -267,6 +272,6 @@ io.on('connection', (socket: Socket) => {
   });
 });
 
-const PORT = 3000;
-server.listen(PORT);
-logger.log('info', 'server is listening %d', PORT);
+const port = SERVER_PORT || 3000;
+server.listen(port);
+logger.log('info', 'server is listening %d', port);

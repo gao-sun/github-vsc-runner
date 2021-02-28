@@ -23,6 +23,7 @@
   },
   "dependencies": {
     "@github-vsc-runner/core": "../core",
+    "dotenv": "^8.2.0",
     "nanoid": "^3.1.20",
     "socket.io": "^3.1.1",
     "winston": "^3.3.3"
