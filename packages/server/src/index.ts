@@ -28,8 +28,8 @@ const { SERVER_PORT, SSL_KEY_PATH, SSL_CERT_PATH } = process.env;
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 21);
 const server = createServer(
   {
-    key: readFileSync(SSL_KEY_PATH || './cert/github-vsc.pem'),
-    cert: readFileSync(SSL_CERT_PATH || './cert/github-vsc.crt'),
+    key: readFileSync(SSL_KEY_PATH || './cert/localhost-key.pem'),
+    cert: readFileSync(SSL_CERT_PATH || './cert/localhost.pem'),
   },
   (req, res) => {
     logger.info('request from %s', req.socket.remoteAddress);
