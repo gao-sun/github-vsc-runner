@@ -1,12 +1,37 @@
 name: Runner Client
 
 on:
-  push:
-    branches: [some-branch-not-reachable]
+  workflow_dispatch:
+    inputs:
+      os:
+        description: "OS for runner client"
+        required: true
+        default: "ubuntu-20.04"
+      sessionId:
+        description: "Runner server session ID"
+        required: true
 
 jobs:
-  main:
-    runs-on: ubuntu-latest
+  ubuntu-20.04:
+    runs-on: ubuntu-20.04
+    if: github.event.inputs.os == 'ubuntu-20.04'
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - uses: actions/setup-node@v1
+        with:
+          node-version: "14"
+
+      - name: Install packages
+        run: yarn
+
+      - name: Start client
+        run: node client.js
+
+  ubuntu-18.04:
+    runs-on: ubuntu-18.04
+    if: github.event.inputs.os == 'ubuntu-18.04'
 
     steps:
       - uses: actions/checkout@v2
