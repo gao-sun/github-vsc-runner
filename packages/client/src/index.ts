@@ -10,8 +10,20 @@ import {
 } from '@github-vsc-runner/core';
 
 import logger from './logger';
+import { exit } from 'process';
 
 dotenv.config();
+
+const { SERVER_ADDRESS, SESSION_ID, SESSION_OS } = process.env;
+
+if (!SESSION_ID) {
+  console.error('missing SESSION_ID from env');
+  exit(1);
+}
+
+console.log(
+  `client started with env: SERVER_ADDRESS=${SERVER_ADDRESS} SESSION_ID=${SESSION_ID} SESSION_OS=${SESSION_OS}`,
+);
 
 type Terminal = TerminalOptions & {
   ptyProcess: pty.IPty;

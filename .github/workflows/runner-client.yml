@@ -7,6 +7,9 @@ on:
         description: "OS for runner client"
         required: true
         default: "ubuntu-20.04"
+      serverAddress:
+        description: "Runner server address"
+        required: true
       sessionId:
         description: "Runner server session ID"
         required: true
@@ -23,11 +26,13 @@ jobs:
         with:
           node-version: "14"
 
-      - name: Install packages
-        run: yarn
+      - name: Build client
+        working-directory: packages/client
+        run: yarn && yarn build
 
       - name: Start client
-        run: node client.js
+        working-directory: packages/client
+        run: node lib/index.js
 
   ubuntu-18-04:
     runs-on: ubuntu-18.04
@@ -40,8 +45,10 @@ jobs:
         with:
           node-version: "14"
 
-      - name: Install packages
-        run: yarn
+      - name: Build client
+        working-directory: packages/client
+        run: yarn && yarn build
 
       - name: Start client
-        run: node client.js
+        working-directory: packages/client
+        run: node lib/index.js
