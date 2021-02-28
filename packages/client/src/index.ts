@@ -34,7 +34,7 @@ type Runner = {
   terminals: Terminal[];
 };
 
-const socket = io(process.env.SERVER_ADDRESS || 'ws://localhost:3000');
+const socket = io(SERVER_ADDRESS || 'ws://localhost:3000');
 const runner: Runner = {
   socket,
   terminals: [],
@@ -69,7 +69,7 @@ logger.info('runner client started');
 
 socket.on('connect', () => {
   logger.info('connected to runner server with id: %s', socket.id);
-  socket.emit(RunnerClientEvent.SetType, process.env.SESSION_ID, process.env.SESSION_OS);
+  socket.emit(RunnerClientEvent.SetType, SESSION_ID, SESSION_OS);
 });
 
 socket.on('disconnect', () => {

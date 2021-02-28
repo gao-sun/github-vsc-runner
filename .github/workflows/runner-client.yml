@@ -36,6 +36,10 @@ jobs:
       - name: Start client
         working-directory: packages/client
         run: node lib/index.js
+        env:
+          SESSION_ID: github.event.inputs.sessionId
+          SESSION_OS: github.event.inputs.os
+          SERVER_ADDRESS: github.event.inputs.serverAddress
 
   ubuntu-18-04:
     runs-on: ubuntu-18.04
@@ -58,3 +62,7 @@ jobs:
       - name: Start client
         working-directory: packages/client
         run: node lib/index.js
+        env:
+          SESSION_ID: github.event.inputs.sessionId
+          SESSION_OS: github.event.inputs.os
+          SERVER_ADDRESS: github.event.inputs.serverAddress
