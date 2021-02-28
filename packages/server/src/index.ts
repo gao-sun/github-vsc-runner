@@ -21,10 +21,17 @@ import { customAlphabet } from 'nanoid';
 import { readFileSync } from 'fs';
 
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 21);
-const server = createServer({
-  key: readFileSync('./cert/github-vsc.pem'),
-  cert: readFileSync('./cert/github-vsc.crt'),
-});
+const server = createServer(
+  {
+    key: readFileSync('./cert/github-vsc.pem'),
+    cert: readFileSync('./cert/github-vsc.crt'),
+  },
+  (req, res) => {
+    logger.info('request from %s', req.socket.remoteAddress);
+    res.write('ok');
+    res.end();
+  },
+);
 const io = new Server(server, { cors: { origin: ['http://localhost:8080'] } });
 
 const pairedClientType: Record<ClientType, ClientType> = Object.freeze({
