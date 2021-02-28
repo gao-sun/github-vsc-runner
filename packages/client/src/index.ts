@@ -33,7 +33,9 @@ type Runner = {
   terminals: Terminal[];
 };
 
-const socket = io(SERVER_ADDRESS || 'ws://localhost:3000');
+const socket = io(SERVER_ADDRESS || 'wss://localhost:3000', {
+  rejectUnauthorized: process.env.NODE_ENV !== 'development',
+});
 const runner: Runner = {
   socket,
   terminals: [],

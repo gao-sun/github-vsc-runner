@@ -17,7 +17,7 @@
   ],
   "scripts": {
     "build": "tsc",
-    "dev": "tsc-watch --onSuccess 'node ./lib/index.js'",
+    "dev": "NODE_ENV=development tsc-watch --onSuccess 'node ./lib/index.js'",
     "lint": "eslint src --ext ts",
     "prepublish": "yarn build"
   },

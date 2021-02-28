@@ -5,6 +5,7 @@ coverage/
 dist/
 lib/
 vscode/
+cert/
 yarn-error.log
 lerna-debug.log
 *.env
