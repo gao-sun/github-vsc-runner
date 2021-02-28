@@ -30,7 +30,7 @@ jobs:
         run: |
           cd packages/core
           yarn
-          cs ../client
+          cd ../client
           yarn
 
       - name: Start client
@@ -52,7 +52,7 @@ jobs:
         run: |
           cd packages/core
           yarn
-          cs ../client
+          cd ../client
           yarn
 
       - name: Start client
