@@ -37,7 +37,9 @@ const server = createServer(
     res.end();
   },
 );
-const io = new Server(server, { cors: { origin: ['http://localhost:8080'] } });
+const io = new Server(server, {
+  cors: { origin: ['http://localhost:8080', 'https://localhost:8080'] },
+});
 
 const pairedClientType: Record<ClientType, ClientType> = Object.freeze({
   [ClientType.Runner]: ClientType.VSC,
