@@ -27,8 +27,11 @@ jobs:
           node-version: "14"
 
       - name: Build client
-        working-directory: packages/client
-        run: yarn && yarn build
+        run: |
+          cd packages/core
+          yarn
+          cs ../client
+          yarn
 
       - name: Start client
         working-directory: packages/client
@@ -46,8 +49,11 @@ jobs:
           node-version: "14"
 
       - name: Build client
-        working-directory: packages/client
-        run: yarn && yarn build
+        run: |
+          cd packages/core
+          yarn
+          cs ../client
+          yarn
 
       - name: Start client
         working-directory: packages/client
