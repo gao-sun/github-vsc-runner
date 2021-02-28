@@ -10,7 +10,6 @@ import {
 } from '@github-vsc-runner/core';
 
 import logger from './logger';
-import { exit } from 'process';
 
 dotenv.config();
 
@@ -18,7 +17,7 @@ const { SERVER_ADDRESS, SESSION_ID, SESSION_OS } = process.env;
 
 if (!SESSION_ID) {
   console.error('missing SESSION_ID from env');
-  exit(1);
+  process.exit(1);
 }
 
 console.log(
@@ -67,7 +66,14 @@ const closeTerminal = (terminal: Terminal) => {
 
 logger.info('runner client started');
 
+const timeoutHandle = setTimeout(() => {
+  logger.warn('cannot connect to runner server in reasonable time');
+  socket.disconnect();
+  process.exit(1);
+}, 20000);
+
 socket.on('connect', () => {
+  clearTimeout(timeoutHandle);
   logger.info('connected to runner server with id: %s', socket.id);
   socket.emit(RunnerClientEvent.SetType, SESSION_ID, SESSION_OS);
 });
