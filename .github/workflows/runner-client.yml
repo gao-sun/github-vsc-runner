@@ -12,7 +12,7 @@ on:
         required: true
 
 jobs:
-  ubuntu-20.04:
+  ubuntu-20-04:
     runs-on: ubuntu-20.04
     if: github.event.inputs.os == 'ubuntu-20.04'
 
@@ -29,7 +29,7 @@ jobs:
       - name: Start client
         run: node client.js
 
-  ubuntu-18.04:
+  ubuntu-18-04:
     runs-on: ubuntu-18.04
     if: github.event.inputs.os == 'ubuntu-18.04'
 
