@@ -22,13 +22,13 @@
     "prepublish": "yarn build"
   },
   "dependencies": {
+    "@github-vsc-runner/core": "../core",
     "dotenv": "^8.2.0",
     "node-pty": "^0.10.0",
     "socket.io-client": "^3.1.1",
     "winston": "^3.3.3"
   },
   "devDependencies": {
-    "@github-vsc-runner/core": "../core",
     "@github-vsc-runner/eslint-config": "^1.0.0-alpha.0",
     "@types/node": "^14.14.31",
     "@typescript-eslint/eslint-plugin": "^4.15.1",
