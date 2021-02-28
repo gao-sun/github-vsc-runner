@@ -21,14 +21,16 @@ export enum RunnerClientEvent {
 }
 
 export enum RunnerClientOS {
-  Ubuntu = 'Ubuntu',
-  macOS = 'macOS',
-  Windows = 'Windows',
+  Ubuntu_20_04 = 'ubuntu-20.04',
+  Ubuntu_18_04 = 'ubuntu-18.04',
+  macOS_11_0 = 'macOS-11.0',
+  macOS_10_15 = 'macOS-10.15',
 }
 
 export enum RunnerServerEvent {
   RunnerStatus = 'server-runner-status',
   SessionStarted = 'server-session-started',
+  SessionTerminated = 'server-session-terminated',
 }
 
 export enum VscClientEvent {

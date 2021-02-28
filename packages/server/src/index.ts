@@ -86,7 +86,15 @@ io.on('connection', (socket: Socket) => {
 
     const session = sessionDict[sessionId];
     if (!session) {
-      logger.warn('session %s does not exist or has been killed, skipping', sessionId);
+      logger.warn('session %s does not exist or has been terminated, skipping', sessionId);
+
+      if (clientType === ClientType.Runner) {
+        socket.emit(VscClientEvent.TerminateSession);
+      }
+
+      if (clientType === ClientType.VSC) {
+        socket.emit(RunnerServerEvent.SessionTerminated);
+      }
       return;
     }
 
@@ -236,10 +244,9 @@ io.on('connection', (socket: Socket) => {
 
         if (client.type === ClientType.Runner) {
           logger.warn('runner client disconnected, terminating session');
-          session.clientDict[pairedClientType[ClientType.Runner]]?.emit(
-            RunnerServerEvent.RunnerStatus,
-            RunnerClientStatus.Offline,
-          );
+          const pairedClient = session.clientDict[pairedClientType[ClientType.Runner]];
+          pairedClient?.emit(RunnerServerEvent.RunnerStatus, RunnerClientStatus.Offline);
+          pairedClient?.emit(RunnerServerEvent.SessionTerminated);
           delete sessionDict[client.sessionId];
         }
       }
