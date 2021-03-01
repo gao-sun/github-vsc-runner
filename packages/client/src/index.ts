@@ -13,7 +13,8 @@ import logger from './logger';
 
 dotenv.config();
 
-const { SERVER_ADDRESS, SESSION_ID, SESSION_OS } = process.env;
+const { SERVER_ADDRESS, SESSION_ID, SESSION_OS, HOME, GITHUB_WORKSPACE } = process.env;
+const cwd = GITHUB_WORKSPACE || HOME;
 
 if (!SESSION_ID) {
   console.error('missing SESSION_ID from env');
@@ -94,7 +95,7 @@ socket.on(VscClientEvent.ActivateTerminal, (options: TerminalOptions) => {
     name: 'runner-terminal',
     cols: cols || 80,
     rows: rows || 30,
-    cwd: process.env.HOME,
+    cwd,
     env: process.env as Record<string, string>,
   });
   const terminal: Terminal = { ...options, ptyProcess };
