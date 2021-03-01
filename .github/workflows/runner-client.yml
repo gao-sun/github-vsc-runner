@@ -14,6 +14,7 @@ on:
         description: "Runner server session ID"
         required: true
 
+# consider using matrix
 jobs:
   ubuntu-20-04:
     runs-on: ubuntu-20.04
