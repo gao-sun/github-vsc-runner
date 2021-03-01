@@ -17,7 +17,8 @@ export enum RunnerClientEvent {
   SetType = 'runner-client',
   Stdout = 'runner-client-stdout',
   TerminalClosed = 'runner-client-terminal-closed',
-  CurrentTerminals = 'runner-current-terminals',
+  CurrentTerminals = 'runner-client-current-terminals',
+  FSEvent = 'runner-client-fs-event',
 }
 
 export enum RunnerClientOS {
@@ -42,6 +43,18 @@ export enum VscClientEvent {
   CloseTerminal = 'vsc-close-terminal',
   Cmd = 'vsc-cmd',
   CheckRunnerStatus = 'vsc-check-runner-status',
+  FSEvent = 'vsc-fs-event',
+}
+
+export enum FSEventType {
+  Stat = 'Stat',
+  ReadDirectory = 'ReadDirectory',
+  CreateDirectory = 'CreateDirectory',
+  ReadFile = 'ReadFile',
+  WriteFile = 'WriteFile',
+  Delete = 'Delete',
+  Rename = 'Rename',
+  Copy = 'Copy',
 }
 
 export type Client = {
