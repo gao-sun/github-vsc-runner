@@ -20,22 +20,15 @@ jobs:
     if: github.event.inputs.os == 'ubuntu-20.04'
 
     steps:
-      - uses: actions/checkout@v2
-
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
 
-      - name: Build client
-        run: |
-          cd packages/core
-          yarn
-          cd ../client
-          yarn
+      - name: Install runner client
+        run: yarn global add @github-vsc-runner/client
 
       - name: Start client
-        working-directory: packages/client
-        run: node lib/index.js
+        run: gvsc-client
         env:
           SESSION_ID: ${{ github.event.inputs.sessionId }}
           SESSION_OS: ${{ github.event.inputs.os }}
