@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { io, Socket } from 'socket.io-client';
 import * as pty from 'node-pty';
 import dotenv from 'dotenv';
