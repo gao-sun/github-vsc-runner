@@ -19,6 +19,7 @@ export enum RunnerClientEvent {
   TerminalClosed = 'runner-client-terminal-closed',
   CurrentTerminals = 'runner-client-current-terminals',
   FSEvent = 'runner-client-fs-event',
+  FSEventError = 'runner-client-fs-event-error',
 }
 
 export enum RunnerClientOS {

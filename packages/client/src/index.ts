@@ -7,6 +7,7 @@ import { RunnerClientEvent, VscClientEvent } from '@github-vsc-runner/core';
 import logger from './logger';
 import { RunnerSession } from './types';
 import { closeTerminal, registerTerminalEventHandlers } from './terminal';
+import { registerFSEventHandlers } from './fs';
 
 dotenv.config();
 
@@ -56,3 +57,4 @@ socket.on(VscClientEvent.TerminateSession, () => {
 });
 
 registerTerminalEventHandlers(socket, runner, cwd);
+registerFSEventHandlers(socket, cwd);
