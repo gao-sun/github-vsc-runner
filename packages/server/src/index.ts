@@ -222,9 +222,12 @@ io.on('connection', (socket: Socket) => {
     VscClientEvent.CloseTerminal,
     VscClientEvent.FetchCurrentTerminals,
     VscClientEvent.SetTerminalDimensions,
+    VscClientEvent.FSEvent,
     RunnerClientEvent.Stdout,
     RunnerClientEvent.CurrentTerminals,
     RunnerClientEvent.TerminalClosed,
+    RunnerClientEvent.FSEvent,
+    RunnerClientEvent.FSEventError,
   ].forEach((event) => {
     socket.on(event, (...data: unknown[]) => {
       emitEventToPairedClient(event, ...data);

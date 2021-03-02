@@ -11,8 +11,8 @@ import { registerFSEventHandlers } from './fs';
 
 dotenv.config();
 
-const { SERVER_ADDRESS, SESSION_ID, SESSION_OS, HOME, GITHUB_WORKSPACE } = process.env;
-const cwd = GITHUB_WORKSPACE || HOME;
+const { SERVER_ADDRESS, SESSION_ID, SESSION_OS, GITHUB_WORKSPACE } = process.env;
+const cwd = GITHUB_WORKSPACE || process.cwd();
 
 if (!SESSION_ID) {
   console.error('missing SESSION_ID from env');

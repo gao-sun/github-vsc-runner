@@ -46,13 +46,13 @@ const handleReadDirectory = async (dir: string, cwd?: string): Promise<[string, 
   );
 };
 
-const readFile = async (path: string, cwd?: string): Promise<Uint8Array> => {
+const readFile = async (path: string, cwd?: string): Promise<string> => {
   const filePath = resolveUri(path, cwd);
-  return promises.readFile(filePath);
+  return promises.readFile(filePath, 'utf-8');
 };
 
 export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
-  socket.on(VscClientEvent.FSEvent, async (type: FSEventType, uuid: string, payload: unknown) => {
+  socket.on(VscClientEvent.FSEvent, async (uuid: string, type: FSEventType, payload: unknown) => {
     // TO-DO: add error handling
 
     const emitResult = (data: unknown) => socket.emit(RunnerClientEvent.FSEvent, uuid, data);
