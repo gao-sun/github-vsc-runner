@@ -1,10 +1,40 @@
-import { FSEventType, RunnerClientEvent, VscClientEvent } from '@github-vsc-runner/core';
+import {
+  FSEventType,
+  RunnerClientEvent,
+  VscClientEvent,
+  FSDeleteFilePayload,
+  FSWriteFilePayload,
+  FSRenameOrCopyPayload,
+} from '@github-vsc-runner/core';
 import { Socket } from 'socket.io-client';
 import { URI } from 'vscode-uri';
-import { promises, Stats } from 'fs';
+import { promises, Stats, existsSync } from 'fs';
 import dayjs from 'dayjs';
 import path from 'path';
 import { FileStat, FileType } from './vscode';
+
+enum SystemErrorNo {
+  ENOENT = 'ENOENT',
+  EEXIST = 'EEXIST',
+  EISDIR = 'EISDIR',
+}
+
+const systemErrorCode: Record<SystemErrorNo, number> = {
+  [SystemErrorNo.ENOENT]: -2,
+  [SystemErrorNo.EEXIST]: -17,
+  [SystemErrorNo.EISDIR]: -21,
+};
+
+class SystemError extends Error {
+  errno: number;
+  code: string;
+
+  constructor(systemError: SystemErrorNo) {
+    super();
+    this.code = systemError;
+    this.errno = systemErrorCode[systemError];
+  }
+}
 
 const getFileType = (stats: Stats): FileType => {
   if (stats.isFile()) {
@@ -51,6 +81,67 @@ const readFile = async (path: string, cwd?: string): Promise<string> => {
   return promises.readFile(filePath, 'utf-8');
 };
 
+const createDirectory = async (path: string, cwd?: string): Promise<void> => {
+  const filePath = resolveUri(path, cwd);
+  return promises.mkdir(filePath);
+};
+
+const writeFile = (
+  { uri, base64Content, options: { create, overwrite } }: FSWriteFilePayload,
+  cwd?: string,
+): Promise<void> => {
+  const filePath = resolveUri(uri, cwd);
+  if ((!existsSync(filePath) && !create) || !existsSync(path.dirname(filePath))) {
+    throw new SystemError(SystemErrorNo.ENOENT);
+  }
+
+  if (existsSync(filePath) && !overwrite) {
+    throw new SystemError(SystemErrorNo.EEXIST);
+  }
+
+  return promises.writeFile(filePath, base64Content, 'base64');
+};
+
+const deleteFile = async (
+  { uri, options: { recursive } }: FSDeleteFilePayload,
+  cwd?: string,
+): Promise<void> => {
+  const filePath = resolveUri(uri, cwd);
+
+  if (!recursive) {
+    const stats = await promises.stat(filePath);
+    if (stats.isDirectory()) {
+      throw new SystemError(SystemErrorNo.EISDIR);
+    }
+  }
+
+  return promises.rm(filePath, { recursive });
+};
+
+const renameOrCopy = async (
+  type: FSEventType.Rename | FSEventType.Copy,
+  { oldUri, newUri, options: { overwrite } }: FSRenameOrCopyPayload,
+  cwd?: string,
+): Promise<void> => {
+  const oldPath = resolveUri(oldUri, cwd);
+  const newPath = resolveUri(newUri, cwd);
+
+  if (!existsSync(oldPath) || !existsSync(path.dirname(newPath))) {
+    throw new SystemError(SystemErrorNo.ENOENT);
+  }
+
+  if (existsSync(newPath)) {
+    if (!overwrite) {
+      throw new SystemError(SystemErrorNo.EEXIST);
+    }
+    await promises.rm(newPath, { recursive: true });
+  }
+
+  return type === FSEventType.Copy
+    ? promises.copyFile(oldPath, newPath)
+    : promises.rename(oldPath, newPath);
+};
+
 export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
   socket.on(VscClientEvent.FSEvent, async (uuid: string, type: FSEventType, payload: unknown) => {
     // TO-DO: add error handling
@@ -69,6 +160,22 @@ export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
 
       if (type === FSEventType.ReadFile) {
         emitResult(await readFile(payload as string, cwd));
+      }
+
+      if (type === FSEventType.CreateDirectory) {
+        emitResult(await createDirectory(payload as string, cwd));
+      }
+
+      if (type === FSEventType.WriteFile) {
+        emitResult(await writeFile(payload as FSWriteFilePayload, cwd));
+      }
+
+      if (type === FSEventType.Delete) {
+        emitResult(await deleteFile(payload as FSDeleteFilePayload, cwd));
+      }
+
+      if (type === FSEventType.Rename || type === FSEventType.Copy) {
+        emitResult(await renameOrCopy(type, payload as FSRenameOrCopyPayload, cwd));
       }
     } catch (error) {
       emitError(error);

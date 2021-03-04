@@ -47,17 +47,6 @@ export enum VscClientEvent {
   FSEvent = 'vsc-fs-event',
 }
 
-export enum FSEventType {
-  Stat = 'Stat',
-  ReadDirectory = 'ReadDirectory',
-  CreateDirectory = 'CreateDirectory',
-  ReadFile = 'ReadFile',
-  WriteFile = 'WriteFile',
-  Delete = 'Delete',
-  Rename = 'Rename',
-  Copy = 'Copy',
-}
-
 export type Client = {
   socket: Socket;
   sessionId?: string;
@@ -80,4 +69,37 @@ export type Session = {
   id: string;
   clientDict: Dictionary<ClientType, Socket>;
   clientOSDict: Dictionary<ClientType, RunnerClientOS>;
+};
+
+export enum FSEventType {
+  Stat = 'Stat',
+  ReadDirectory = 'ReadDirectory',
+  CreateDirectory = 'CreateDirectory',
+  ReadFile = 'ReadFile',
+  WriteFile = 'WriteFile',
+  Delete = 'Delete',
+  Rename = 'Rename',
+  Copy = 'Copy',
+}
+
+export type FSWriteFilePayload = {
+  uri: string;
+  base64Content: string;
+  options: {
+    create: boolean;
+    overwrite: boolean;
+  };
+};
+
+export type FSDeleteFilePayload = {
+  uri: string;
+  options: {
+    recursive: boolean;
+  };
+};
+
+export type FSRenameOrCopyPayload = {
+  oldUri: string;
+  newUri: string;
+  options: { overwrite: boolean };
 };
