@@ -12,6 +12,7 @@ import { promises, Stats, existsSync } from 'fs';
 import dayjs from 'dayjs';
 import path from 'path';
 import { FileStat, FileType } from './vscode';
+import logger from './logger';
 
 enum SystemErrorNo {
   ENOENT = 'ENOENT',
@@ -178,6 +179,8 @@ export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
         emitResult(await renameOrCopy(type, payload as FSRenameOrCopyPayload, cwd));
       }
     } catch (error) {
+      logger.verbose('FS error');
+      logger.verbose(error);
       emitError(error);
     }
   });
