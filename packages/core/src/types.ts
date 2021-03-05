@@ -105,7 +105,17 @@ export type FSRenameOrCopyPayload = {
   options: { overwrite: boolean };
 };
 
+// edited from vscode
+export interface SearchOptions {
+  folder: string;
+  includes: string[];
+  excludes: string[];
+  useIgnoreFiles: boolean;
+  followSymlinks: boolean;
+  useGlobalIgnoreFiles: boolean;
+}
+
 export type FSFileSearchPayload = {
   pattern: string;
-  options: { maxResults?: number };
+  options: { maxResults?: number } & SearchOptions;
 };

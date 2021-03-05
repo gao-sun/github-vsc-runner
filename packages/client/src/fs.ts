@@ -6,12 +6,14 @@ import {
   FSWriteFilePayload,
   FSRenameOrCopyPayload,
   FSFileSearchPayload,
+  SearchOptions,
 } from '@github-vsc-runner/core';
 import { Socket } from 'socket.io-client';
 import { URI } from 'vscode-uri';
 import { promises, Stats, existsSync } from 'fs';
 import dayjs from 'dayjs';
 import path from 'path';
+import minimatch from 'minimatch';
 import { FileStat, FileType } from './vscode';
 import logger from './logger';
 
@@ -144,16 +146,37 @@ const renameOrCopy = async (
     : promises.rename(oldPath, newPath);
 };
 
-const _fileSearch = async (root: string, pattern: string, maxResults?: number, cwd?: string) => {
+const _fileSearch = async (
+  root: string,
+  pattern: string,
+  options: SearchOptions,
+  maxResults?: number,
+  cwd?: string,
+) => {
+  const { includes, excludes } = options;
   const files = await promises.readdir(resolveUri(root, cwd));
   const result: string[] = [];
 
   for (const file of files) {
     const filePath = path.join(root, file);
+
+    if (
+      (includes.length && !includes.some((include) => minimatch(filePath, include))) ||
+      excludes.some((exclude) => minimatch(filePath, exclude))
+    ) {
+      continue;
+    }
+
     const stats = await promises.stat(resolveUri(filePath, cwd));
     if (stats.isDirectory()) {
       result.push(
-        ...(await _fileSearch(filePath, pattern, maxResults && maxResults - result.length, cwd)),
+        ...(await _fileSearch(
+          filePath,
+          pattern,
+          options,
+          maxResults && maxResults - result.length,
+          cwd,
+        )),
       );
     }
     if (maxResults && result.length >= maxResults) {
@@ -170,10 +193,17 @@ const _fileSearch = async (root: string, pattern: string, maxResults?: number, c
   return result;
 };
 
-const fileSearch = (
-  { pattern, options: { maxResults } }: FSFileSearchPayload,
+const fileSearch = async (
+  { pattern, options: { maxResults, ...options } }: FSFileSearchPayload,
   cwd?: string,
-): Promise<string[]> => _fileSearch('/', pattern, maxResults, cwd);
+): Promise<string[]> => {
+  try {
+    return await _fileSearch(options.folder, pattern, options, maxResults, cwd);
+  } catch (error) {
+    logger.warn('error when searching file: %s', error);
+  }
+  return [];
+};
 
 export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
   socket.on(VscClientEvent.FSEvent, async (uuid: string, type: FSEventType, payload: unknown) => {
