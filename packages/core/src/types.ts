@@ -110,12 +110,98 @@ export interface SearchOptions {
   folder: string;
   includes: string[];
   excludes: string[];
-  useIgnoreFiles: boolean;
-  followSymlinks: boolean;
-  useGlobalIgnoreFiles: boolean;
 }
 
 export type FSFileSearchPayload = {
   pattern: string;
   options: { maxResults?: number } & SearchOptions;
 };
+
+// exported from vscode
+export interface TextSearchQuery {
+  pattern: string;
+  isMultiline?: boolean;
+  isRegExp?: boolean;
+  isCaseSensitive?: boolean;
+  isWordMatch?: boolean;
+}
+
+export interface TextSearchPreviewOptions {
+  /**
+   * The maximum number of lines in the preview.
+   * Only search providers that support multiline search will ever return more than one line in the match.
+   */
+  matchLines: number;
+
+  /**
+   * The maximum number of characters included per line.
+   */
+  charsPerLine: number;
+}
+
+export interface TextSearchOptions extends SearchOptions {
+  /**
+   * The maximum number of results to be returned.
+   */
+  maxResults: number;
+
+  /**
+   * Options to specify the size of the result text preview.
+   */
+  previewOptions?: TextSearchPreviewOptions;
+
+  /**
+   * Exclude files larger than `maxFileSize` in bytes.
+   */
+  maxFileSize?: number;
+
+  /**
+   * Interpret files using this encoding.
+   * See the vscode setting `"files.encoding"`
+   */
+  encoding?: string;
+
+  /**
+   * Number of lines of context to include before each match.
+   */
+  beforeContext?: number;
+
+  /**
+   * Number of lines of context to include after each match.
+   */
+  afterContext?: number;
+}
+
+export type FSTextSearchPayload = {
+  query: TextSearchQuery;
+  options: TextSearchOptions;
+};
+
+export type FSRange = {
+  startLine: number;
+  startPosition: number;
+  endLine: number;
+  endPosition: number;
+};
+
+export interface FSTextSearchMatchPreview {
+  /**
+   * The matching lines of text, or a portion of the matching line that contains the match.
+   */
+  text: string;
+
+  /**
+   * The Range within `text` corresponding to the text of the match.
+   * The number of matches must match the TextSearchMatch's range property.
+   */
+  matches: FSRange[];
+}
+
+export interface FSTextSearchMatch {
+  path: string;
+  /**
+   * The range of the match within the document, or multiple ranges for multiple matches.
+   */
+  ranges: FSRange[];
+  preview: FSTextSearchMatchPreview;
+}

@@ -6,55 +6,15 @@ import {
   FSWriteFilePayload,
   FSRenameOrCopyPayload,
   FSFileSearchPayload,
-  SearchOptions,
 } from '@github-vsc-runner/core';
 import { Socket } from 'socket.io-client';
-import { URI } from 'vscode-uri';
-import { promises, Stats, existsSync } from 'fs';
+import { promises, existsSync } from 'fs';
 import dayjs from 'dayjs';
 import path from 'path';
-import minimatch from 'minimatch';
-import { FileStat, FileType } from './vscode';
-import logger from './logger';
-
-enum SystemErrorNo {
-  ENOENT = 'ENOENT',
-  EEXIST = 'EEXIST',
-  EISDIR = 'EISDIR',
-}
-
-const systemErrorCode: Record<SystemErrorNo, number> = {
-  [SystemErrorNo.ENOENT]: -2,
-  [SystemErrorNo.EEXIST]: -17,
-  [SystemErrorNo.EISDIR]: -21,
-};
-
-class SystemError extends Error {
-  errno: number;
-  code: string;
-
-  constructor(systemError: SystemErrorNo) {
-    super();
-    this.code = systemError;
-    this.errno = systemErrorCode[systemError];
-  }
-}
-
-const getFileType = (stats: Stats): FileType => {
-  if (stats.isFile()) {
-    return FileType.File;
-  }
-  if (stats.isDirectory()) {
-    return FileType.Directory;
-  }
-  if (stats.isSymbolicLink()) {
-    return FileType.SymbolicLink;
-  }
-  return FileType.Unknown;
-};
-
-const resolveUri = (uri: string, cwd?: string): string =>
-  path.join(cwd || process.cwd(), URI.parse(uri).path);
+import { FileStat, FileType } from '../vscode';
+import logger from '../logger';
+import { resolveUri, getFileType, SystemError, SystemErrorNo } from './foundation';
+import { fileSearch } from './search';
 
 const stat = async (path: string, cwd?: string): Promise<FileStat> => {
   const filePath = resolveUri(path, cwd);
@@ -144,65 +104,6 @@ const renameOrCopy = async (
   return type === FSEventType.Copy
     ? promises.copyFile(oldPath, newPath)
     : promises.rename(oldPath, newPath);
-};
-
-const _fileSearch = async (
-  root: string,
-  pattern: string,
-  options: SearchOptions,
-  maxResults?: number,
-  cwd?: string,
-) => {
-  const { includes, excludes } = options;
-  const files = await promises.readdir(resolveUri(root, cwd));
-  const result: string[] = [];
-
-  for (const file of files) {
-    const filePath = path.join(root, file);
-
-    if (
-      (includes.length && !includes.some((include) => minimatch(filePath, include))) ||
-      excludes.some((exclude) => minimatch(filePath, exclude))
-    ) {
-      continue;
-    }
-
-    const stats = await promises.stat(resolveUri(filePath, cwd));
-    if (stats.isDirectory()) {
-      result.push(
-        ...(await _fileSearch(
-          filePath,
-          pattern,
-          options,
-          maxResults && maxResults - result.length,
-          cwd,
-        )),
-      );
-    }
-    if (maxResults && result.length >= maxResults) {
-      break;
-    }
-    if (stats.isFile() && filePath.includes(pattern)) {
-      result.push(filePath);
-    }
-    if (maxResults && result.length >= maxResults) {
-      break;
-    }
-  }
-
-  return result;
-};
-
-const fileSearch = async (
-  { pattern, options: { maxResults, ...options } }: FSFileSearchPayload,
-  cwd?: string,
-): Promise<string[]> => {
-  try {
-    return await _fileSearch(options.folder, pattern, options, maxResults, cwd);
-  } catch (error) {
-    logger.warn('error when searching file: %s', error);
-  }
-  return [];
 };
 
 export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
