@@ -5,6 +5,7 @@ import {
   FSDeleteFilePayload,
   FSWriteFilePayload,
   FSRenameOrCopyPayload,
+  FSFileSearchPayload,
 } from '@github-vsc-runner/core';
 import { Socket } from 'socket.io-client';
 import { URI } from 'vscode-uri';
@@ -53,7 +54,7 @@ const getFileType = (stats: Stats): FileType => {
 const resolveUri = (uri: string, cwd?: string): string =>
   path.join(cwd || process.cwd(), URI.parse(uri).path);
 
-const handleStat = async (path: string, cwd?: string): Promise<FileStat> => {
+const stat = async (path: string, cwd?: string): Promise<FileStat> => {
   const filePath = resolveUri(path, cwd);
   const stats = await promises.stat(filePath);
   const { ctime, mtime, size } = stats;
@@ -66,7 +67,7 @@ const handleStat = async (path: string, cwd?: string): Promise<FileStat> => {
   return data;
 };
 
-const handleReadDirectory = async (dir: string, cwd?: string): Promise<[string, FileType][]> => {
+const readDirectory = async (dir: string, cwd?: string): Promise<[string, FileType][]> => {
   const dirPath = resolveUri(dir, cwd);
   const files = await promises.readdir(dirPath);
   return await Promise.all(
@@ -143,6 +144,37 @@ const renameOrCopy = async (
     : promises.rename(oldPath, newPath);
 };
 
+const _fileSearch = async (root: string, pattern: string, maxResults?: number, cwd?: string) => {
+  const files = await promises.readdir(resolveUri(root, cwd));
+  const result: string[] = [];
+
+  for (const file of files) {
+    const filePath = path.join(root, file);
+    const stats = await promises.stat(resolveUri(filePath, cwd));
+    if (stats.isDirectory()) {
+      result.push(
+        ...(await _fileSearch(filePath, pattern, maxResults && maxResults - result.length, cwd)),
+      );
+    }
+    if (maxResults && result.length >= maxResults) {
+      break;
+    }
+    if (stats.isFile() && filePath.includes(pattern)) {
+      result.push(filePath);
+    }
+    if (maxResults && result.length >= maxResults) {
+      break;
+    }
+  }
+
+  return result;
+};
+
+const fileSearch = (
+  { pattern, options: { maxResults } }: FSFileSearchPayload,
+  cwd?: string,
+): Promise<string[]> => _fileSearch('/', pattern, maxResults, cwd);
+
 export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
   socket.on(VscClientEvent.FSEvent, async (uuid: string, type: FSEventType, payload: unknown) => {
     // TO-DO: add error handling
@@ -152,11 +184,11 @@ export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
 
     try {
       if (type === FSEventType.Stat) {
-        emitResult(await handleStat(payload as string, cwd));
+        emitResult(await stat(payload as string, cwd));
       }
 
       if (type === FSEventType.ReadDirectory) {
-        emitResult(await handleReadDirectory(payload as string, cwd));
+        emitResult(await readDirectory(payload as string, cwd));
       }
 
       if (type === FSEventType.ReadFile) {
@@ -177,6 +209,10 @@ export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
 
       if (type === FSEventType.Rename || type === FSEventType.Copy) {
         emitResult(await renameOrCopy(type, payload as FSRenameOrCopyPayload, cwd));
+      }
+
+      if (type === FSEventType.FileSearch) {
+        emitResult(await fileSearch(payload as FSFileSearchPayload, cwd));
       }
     } catch (error) {
       logger.verbose('FS error');

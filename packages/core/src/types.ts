@@ -80,6 +80,7 @@ export enum FSEventType {
   Delete = 'Delete',
   Rename = 'Rename',
   Copy = 'Copy',
+  FileSearch = 'FileSearch',
 }
 
 export type FSWriteFilePayload = {
@@ -102,4 +103,9 @@ export type FSRenameOrCopyPayload = {
   oldUri: string;
   newUri: string;
   options: { overwrite: boolean };
+};
+
+export type FSFileSearchPayload = {
+  pattern: string;
+  options: { maxResults?: number };
 };
