@@ -21,6 +21,14 @@ export enum RunnerClientEvent {
   FSEvent = 'runner-client-fs-event',
   FSEventError = 'runner-client-fs-event-error',
   FSTextSearchMatch = 'runner-client-fs-text-search-match',
+  HttpStream = 'runner-client-http-stream',
+}
+
+export enum RunnerClientHttpStreamType {
+  Start = 'start',
+  Data = 'data',
+  Error = 'error',
+  End = 'end',
 }
 
 export enum RunnerClientOS {
@@ -34,6 +42,7 @@ export enum RunnerServerEvent {
   RunnerStatus = 'server-runner-status',
   SessionStarted = 'server-session-started',
   SessionTerminated = 'server-session-terminated',
+  HttpRequest = 'server-http-request',
 }
 
 export enum VscClientEvent {
@@ -68,6 +77,7 @@ export type TerminalOptions = TerminalDimensions & {
 
 export type Session = {
   id: string;
+  portForwarding?: number;
   clientDict: Dictionary<ClientType, Socket>;
   clientOSDict: Dictionary<ClientType, RunnerClientOS>;
 };

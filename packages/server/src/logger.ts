@@ -3,7 +3,7 @@ import { createLogger, transports, format } from 'winston';
 const isProduction = process.env.NODE_ENV === 'production';
 
 export default createLogger({
-  level: 'info',
+  level: process.env.NODE_ENV === 'development' ? 'verbose' : 'info',
   format: format.combine(
     format.splat(),
     format.timestamp({

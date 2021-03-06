@@ -15,31 +15,18 @@ import {
   Session,
   Dictionary,
   RunnerClientOS,
+  RunnerClientHttpStreamType,
 } from '@github-vsc-runner/core';
 
 import logger from './logger';
 import { customAlphabet } from 'nanoid';
 import { readFileSync } from 'fs';
+import { IncomingMessage, ServerResponse } from 'http';
+import { getHeaders, httpNewLine, send404 } from './httpProxy';
 
 dotenv.config();
 
 const { SERVER_PORT, SSL_KEY_PATH, SSL_CERT_PATH } = process.env;
-
-const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 21);
-const server = createServer(
-  {
-    key: readFileSync(SSL_KEY_PATH || './cert/localhost-key.pem'),
-    cert: readFileSync(SSL_CERT_PATH || './cert/localhost.pem'),
-  },
-  (req, res) => {
-    logger.info('request from %s', req.socket.remoteAddress);
-    res.write('ok');
-    res.end();
-  },
-);
-const io = new Server(server, {
-  cors: { origin: ['http://localhost:8080', 'https://localhost:8080'] },
-});
 
 const pairedClientType: Record<ClientType, ClientType> = Object.freeze({
   [ClientType.Runner]: ClientType.VSC,
@@ -47,7 +34,50 @@ const pairedClientType: Record<ClientType, ClientType> = Object.freeze({
 });
 
 const clientDict: Dictionary<string, Client> = {};
-const sessionDict: Dictionary<string, Session> = {};
+const httpDict: Dictionary<string, [IncomingMessage, ServerResponse]> = {};
+const sessionDict: Dictionary<string, Session> = {
+  aaa: {
+    id: 'aaa',
+    clientDict: {} as Dictionary<string, any>,
+    clientOSDict: {} as Dictionary<string, any>,
+  },
+};
+
+const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 21);
+const server = createServer(
+  {
+    key: readFileSync(SSL_KEY_PATH || './cert/runner.github-vsc.localhost-key.pem'),
+    cert: readFileSync(SSL_CERT_PATH || './cert/runner.github-vsc.localhost.pem'),
+  },
+  async (req, res) => {
+    logger.verbose('request from %s', req.socket.remoteAddress);
+    logger.verbose('[%s] %s', req.method, req.url);
+    const domains = req.headers.host?.split('.') ?? [];
+
+    if (!(domains.length >= 2 && domains[1].startsWith('runner'))) {
+      send404(res);
+      return;
+    }
+
+    const sessionId = domains[0];
+    const session = sessionDict[sessionId];
+    const runnerClient = session?.clientDict[ClientType.Runner];
+
+    if (!session || !runnerClient) {
+      send404(res);
+      return;
+    }
+
+    const requestUUID = nanoid();
+
+    httpDict[requestUUID] = [req, res];
+    runnerClient.emit(RunnerServerEvent.HttpRequest, requestUUID, RunnerClientHttpStreamType.Start);
+  },
+);
+const io = new Server(server, {
+  cors: { origin: ['http://localhost:8080', 'https://localhost:8080'] },
+  transports: ['websocket'],
+});
 
 const isClientAndEventTypeMatching = (
   clientType: ClientType,
@@ -242,6 +272,57 @@ io.on('connection', (socket: Socket) => {
 
     emitRunnerClientStatus(client.sessionId);
   });
+
+  socket.on(
+    RunnerClientEvent.HttpStream,
+    (uuid: string, type: RunnerClientHttpStreamType, data: any) => {
+      const [req, res] = httpDict[uuid] ?? [];
+
+      logger.debug('http stream [%s], uuid=%s', type, uuid);
+
+      if (!req || !res) {
+        logger.warn('no req/res found');
+        return;
+      }
+
+      // ok for request transportation
+      if (type === RunnerClientHttpStreamType.Start) {
+        const startLine = `${req.method} ${req.url} HTTP/${req.httpVersion}`;
+        const headers = getHeaders(req);
+        socket.emit(
+          RunnerServerEvent.HttpRequest,
+          uuid,
+          RunnerClientHttpStreamType.Data,
+          [startLine, headers.join(httpNewLine), '', ''].join(httpNewLine),
+        );
+        req.on('data', (chunk) =>
+          socket.emit(RunnerServerEvent.HttpRequest, uuid, RunnerClientHttpStreamType.Data, chunk),
+        );
+        req.once('end', () =>
+          socket.emit(RunnerServerEvent.HttpRequest, uuid, RunnerClientHttpStreamType.End),
+        );
+        return;
+      }
+
+      if (type === RunnerClientHttpStreamType.Data) {
+        res.socket?.write(data);
+        return;
+      }
+
+      if (type === RunnerClientHttpStreamType.End) {
+        res.socket?.end();
+      }
+
+      if (type === RunnerClientHttpStreamType.Error) {
+        res.statusCode = 503;
+        res.write('503 service unavailable\n');
+        res.write(JSON.stringify(data));
+        res.end();
+      }
+
+      delete httpDict[uuid];
+    },
+  );
 
   socket.on(VscClientEvent.TerminateSession, () => {
     if (!isEventValid(client, VscClientEvent.TerminateSession)) {
