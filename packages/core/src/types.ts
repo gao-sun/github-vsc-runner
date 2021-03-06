@@ -20,7 +20,7 @@ export enum RunnerClientEvent {
   CurrentTerminals = 'runner-client-current-terminals',
   FSEvent = 'runner-client-fs-event',
   FSEventError = 'runner-client-fs-event-error',
-  FSTextSearchEvent = 'runner-client-fs-text-search-event',
+  FSTextSearchMatch = 'runner-client-fs-text-search-match',
 }
 
 export enum RunnerClientOS {
