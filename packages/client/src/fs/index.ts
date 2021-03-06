@@ -156,7 +156,7 @@ export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
       }
     } catch (error) {
       logger.verbose('FS error');
-      logger.verbose(error);
+      logger.verbose(JSON.stringify(error));
       emitError(error);
     }
   });

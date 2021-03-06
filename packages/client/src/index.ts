@@ -15,12 +15,14 @@ const { SERVER_ADDRESS, SESSION_ID, SESSION_OS, GITHUB_WORKSPACE } = process.env
 const cwd = GITHUB_WORKSPACE || process.cwd();
 
 if (!SESSION_ID) {
-  console.error('missing SESSION_ID from env');
+  logger.error('missing SESSION_ID from env');
   process.exit(1);
 }
 
-console.log(
-  `client started with env: SERVER_ADDRESS=${SERVER_ADDRESS} SESSION_ID=${SESSION_ID} SESSION_OS=${SESSION_OS}`,
+logger.info(
+  `client started with env: SERVER_ADDRESS=${SERVER_ADDRESS} SESSION_ID=***${SESSION_ID.slice(
+    -4,
+  )} SESSION_OS=${SESSION_OS}`,
 );
 
 const socket = io(SERVER_ADDRESS || 'wss://localhost:3000', {

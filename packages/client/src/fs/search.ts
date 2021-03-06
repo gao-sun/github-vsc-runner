@@ -4,6 +4,7 @@ import {
   FSTextSearchPayload,
   FSTextSearchMatch,
   TextSearchComplete,
+  FSRange,
 } from '@github-vsc-runner/core';
 import { promises } from 'fs';
 import path from 'path';
@@ -70,12 +71,15 @@ export const fileSearch = async (
   return [];
 };
 
+const previewMaxPrefix = 20;
+const previewMaxLength = 200;
+
 const _textSearch = async (
   root: string,
   config: FSTextSearchPayload,
   cwd?: string,
   emitMatch?: (match: FSTextSearchMatch) => void,
-): Promise<[FSTextSearchMatch[], boolean]> => {
+): Promise<[FSTextSearchMatch[], boolean, number]> => {
   const {
     query,
     options: { includes, excludes, maxResults, maxFileSize, encoding },
@@ -151,23 +155,41 @@ const _textSearch = async (
           const startPosition = match.index - startCharIndex;
           const endPosition = endIndex - endCharIndex;
           matchResult.ranges.push({
-            startLine: startLineIndex + 1,
+            startLine: startLineIndex,
             startPosition,
-            endLine: endLineIndex + 1,
+            endLine: endLineIndex,
             endPosition,
           });
-          matchResult.preview.matches.push({
-            startLine: previewTextLines + 1,
+
+          // single line preview only
+          let previewText = '';
+          const previewMatch: FSRange = {
+            startLine: previewTextLines,
             startPosition,
-            endLine: previewTextLines + 1 + (endLineIndex - startLineIndex),
-            endPosition,
-          });
-          for (let line = startLineIndex; line <= endLineIndex; ++line) {
-            matchResult.preview.text += lines[line] + '\n';
+            endLine: previewTextLines,
+            endPosition: endLineIndex > startLineIndex ? lines[startLineIndex].length : endPosition,
+          };
+
+          if (previewMatch.startPosition > previewMaxPrefix) {
+            previewText += lines[startLineIndex].slice(startPosition - previewMaxPrefix) + '\n';
+            previewMatch.endPosition -= startPosition - previewMaxPrefix;
+            previewMatch.startPosition = previewMaxPrefix;
+          } else {
+            previewText += lines[startLineIndex] + '\n';
           }
-          previewTextLines += endLineIndex - startLineIndex + 1;
+
+          if (previewText.length > previewMaxLength) {
+            previewText = previewText.slice(0, previewMaxLength) + '\n';
+            previewMatch.endPosition = Math.min(previewMatch.endPosition, previewText.length);
+          }
+
+          matchResult.preview.matches.push(previewMatch);
+          matchResult.preview.text += previewText;
+          previewTextLines += 1;
         }
       } while (match);
+
+      matchResult.preview.text = matchResult.preview.text.slice(0, -1);
 
       if (matchResult.ranges.length > 0) {
         result.push(matchResult);
@@ -179,13 +201,13 @@ const _textSearch = async (
     }
   }
 
-  return [result, !!maxResults && totalResult > maxResults];
+  return [result, !!maxResults && totalResult > maxResults, totalResult];
 };
 
 const getFlags = ({ isCaseSensitive, isMultiline }: FSTextSearchPayload['query']): string => {
   let result = 'g';
 
-  if (isCaseSensitive) {
+  if (!isCaseSensitive) {
     result += 'i';
   }
 
@@ -216,6 +238,14 @@ export const textSearch = async (
   cwd?: string,
   emitMatch?: (match: FSTextSearchMatch) => void,
 ): Promise<TextSearchComplete> => {
-  const [, limitHit] = await _textSearch(config.options.folder, config, cwd, emitMatch);
+  logger.verbose('text search with config');
+  logger.verbose(JSON.stringify(config));
+  const [, limitHit, totalResult] = await _textSearch(
+    config.options.folder,
+    config,
+    cwd,
+    emitMatch,
+  );
+  logger.verbose('search completed: limitHit=%s totalResult=%s', limitHit, totalResult);
   return { limitHit };
 };

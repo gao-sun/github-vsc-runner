@@ -228,6 +228,7 @@ io.on('connection', (socket: Socket) => {
     RunnerClientEvent.TerminalClosed,
     RunnerClientEvent.FSEvent,
     RunnerClientEvent.FSEventError,
+    RunnerClientEvent.FSTextSearchMatch,
   ].forEach((event) => {
     socket.on(event, (...data: unknown[]) => {
       emitEventToPairedClient(event, ...data);
