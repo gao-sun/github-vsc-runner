@@ -20,6 +20,7 @@ export enum RunnerClientEvent {
   CurrentTerminals = 'runner-client-current-terminals',
   FSEvent = 'runner-client-fs-event',
   FSEventError = 'runner-client-fs-event-error',
+  FSTextSearchEvent = 'runner-client-fs-text-search-event',
 }
 
 export enum RunnerClientOS {
@@ -81,6 +82,7 @@ export enum FSEventType {
   Rename = 'Rename',
   Copy = 'Copy',
   FileSearch = 'FileSearch',
+  TextSearch = 'TextSearch',
 }
 
 export type FSWriteFilePayload = {
@@ -204,4 +206,18 @@ export interface FSTextSearchMatch {
    */
   ranges: FSRange[];
   preview: FSTextSearchMatchPreview;
+}
+
+/**
+ * Information collected when text search is complete.
+ */
+export interface TextSearchComplete {
+  /**
+   * Whether the search hit the limit on the maximum number of search results.
+   * `maxResults` on [`TextSearchOptions`](#TextSearchOptions) specifies the max number of results.
+   * - If exactly that number of matches exist, this should be false.
+   * - If `maxResults` matches are returned and more exist, this should be true.
+   * - If search hits an internal limit which is less than `maxResults`, this should be true.
+   */
+  limitHit?: boolean;
 }

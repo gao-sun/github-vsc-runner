@@ -6,6 +6,7 @@ import {
   FSWriteFilePayload,
   FSRenameOrCopyPayload,
   FSFileSearchPayload,
+  FSTextSearchPayload,
 } from '@github-vsc-runner/core';
 import { Socket } from 'socket.io-client';
 import { promises, existsSync } from 'fs';
@@ -14,7 +15,7 @@ import path from 'path';
 import { FileStat, FileType } from '../vscode';
 import logger from '../logger';
 import { resolveUri, getFileType, SystemError, SystemErrorNo } from './foundation';
-import { fileSearch } from './search';
+import { fileSearch, textSearch } from './search';
 
 const stat = async (path: string, cwd?: string): Promise<FileStat> => {
   const filePath = resolveUri(path, cwd);
@@ -144,6 +145,14 @@ export const registerFSEventHandlers = (socket: Socket, cwd?: string): void => {
 
       if (type === FSEventType.FileSearch) {
         emitResult(await fileSearch(payload as FSFileSearchPayload, cwd));
+      }
+
+      if (type === FSEventType.TextSearch) {
+        emitResult(
+          await textSearch(payload as FSTextSearchPayload, cwd, (match) =>
+            socket.emit(RunnerClientEvent.FSTextSearchMatch, uuid, match),
+          ),
+        );
       }
     } catch (error) {
       logger.verbose('FS error');

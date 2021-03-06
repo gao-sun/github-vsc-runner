@@ -3,6 +3,7 @@ import {
   SearchOptions,
   FSTextSearchPayload,
   FSTextSearchMatch,
+  TextSearchComplete,
 } from '@github-vsc-runner/core';
 import { promises } from 'fs';
 import path from 'path';
@@ -69,7 +70,12 @@ export const fileSearch = async (
   return [];
 };
 
-const _textSearch = async (root: string, config: FSTextSearchPayload, cwd?: string) => {
+const _textSearch = async (
+  root: string,
+  config: FSTextSearchPayload,
+  cwd?: string,
+  emitMatch?: (match: FSTextSearchMatch) => void,
+): Promise<[FSTextSearchMatch[], boolean]> => {
   const {
     query,
     options: { includes, excludes, maxResults, maxFileSize, encoding },
@@ -92,9 +98,9 @@ const _textSearch = async (root: string, config: FSTextSearchPayload, cwd?: stri
     const stats = await promises.stat(resolvedPath);
 
     if (stats.isDirectory()) {
-      result.push(...(await _textSearch(filePath, config, cwd)));
+      result.push(...(await _textSearch(filePath, config, cwd, emitMatch))[0]);
     }
-    if (maxResults && totalResult >= maxResults) {
+    if (maxResults && totalResult > maxResults) {
       break;
     }
 
@@ -126,6 +132,11 @@ const _textSearch = async (root: string, config: FSTextSearchPayload, cwd?: stri
       do {
         match = regExp.exec(content);
         if (match) {
+          totalResult += 1;
+          if (maxResults && totalResult > maxResults) {
+            break;
+          }
+
           while (startCharIndex + lines[startLineIndex].length < match.index) {
             startCharIndex += lines[startLineIndex].length + 1;
             startLineIndex += 1;
@@ -155,24 +166,20 @@ const _textSearch = async (root: string, config: FSTextSearchPayload, cwd?: stri
             matchResult.preview.text += lines[line] + '\n';
           }
           previewTextLines += endLineIndex - startLineIndex + 1;
-
-          totalResult += 1;
-          if (maxResults && totalResult >= maxResults) {
-            break;
-          }
         }
       } while (match);
 
       if (matchResult.ranges.length > 0) {
         result.push(matchResult);
+        emitMatch?.(matchResult);
       }
     }
-    if (maxResults && totalResult >= maxResults) {
+    if (maxResults && totalResult > maxResults) {
       break;
     }
   }
 
-  return result;
+  return [result, !!maxResults && totalResult > maxResults];
 };
 
 const getFlags = ({ isCaseSensitive, isMultiline }: FSTextSearchPayload['query']): string => {
@@ -204,11 +211,11 @@ const getPattern = ({ pattern, isRegExp, isWordMatch }: FSTextSearchPayload['que
   return result;
 };
 
-export const textSearch = async (config: FSTextSearchPayload, cwd?: string): Promise<void> => {
-  console.log('text search', await _textSearch(config.options.folder, config, cwd));
+export const textSearch = async (
+  config: FSTextSearchPayload,
+  cwd?: string,
+  emitMatch?: (match: FSTextSearchMatch) => void,
+): Promise<TextSearchComplete> => {
+  const [, limitHit] = await _textSearch(config.options.folder, config, cwd, emitMatch);
+  return { limitHit };
 };
-
-textSearch({
-  query: { pattern: 'a' },
-  options: { excludes: ['**/node_modules'], maxResults: 3, folder: '/', includes: [] },
-});
