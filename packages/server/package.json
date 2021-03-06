@@ -1,6 +1,6 @@
 {
   "name": "@github-vsc-runner/server",
-  "version": "1.0.0-alpha.10",
+  "version": "1.0.0-alpha.11",
   "main": "lib/index.js",
   "publishConfig": {
     "access": "public"
