@@ -49,7 +49,7 @@ export const registerTerminalEventHandlers = (
 
     const { id, file, rows, cols } = options;
     const ptyProcess = pty.spawn(file || 'zsh', [], {
-      name: 'runner-terminal',
+      name: 'xterm-color',
       cols: cols || 80,
       rows: rows || 30,
       cwd,
