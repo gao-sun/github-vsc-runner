@@ -28,7 +28,7 @@ logger.info(
 
 const socket = io(SERVER_ADDRESS || 'wss://localhost:3000', {
   rejectUnauthorized: process.env.NODE_ENV !== 'development',
-  transports: ['websocket', 'polling'],
+  transports: ['websocket'],
 });
 const runner: RunnerSession = {
   socket,
