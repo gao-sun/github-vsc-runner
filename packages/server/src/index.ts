@@ -16,13 +16,15 @@ import {
   Dictionary,
   RunnerClientOS,
   RunnerClientHttpStreamType,
+  RunnerClientHttpRequest,
+  RunnerClientHttpResponse,
 } from '@github-vsc-runner/core';
 
 import logger from './logger';
 import { customAlphabet } from 'nanoid';
 import { readFileSync } from 'fs';
 import { IncomingMessage, ServerResponse } from 'http';
-import { getHeaders, httpNewLine, send404 } from './httpProxy';
+import { send404 } from './httpProxy';
 
 dotenv.config();
 
@@ -71,7 +73,18 @@ const server = createServer(
     const requestUUID = nanoid();
 
     httpDict[requestUUID] = [req, res];
-    runnerClient.emit(RunnerServerEvent.HttpRequest, requestUUID, RunnerClientHttpStreamType.Start);
+
+    const payload: RunnerClientHttpRequest = {
+      path: req.url,
+      method: req.method,
+      headers: req.headers,
+    };
+    runnerClient.emit(
+      RunnerServerEvent.HttpRequest,
+      requestUUID,
+      RunnerClientHttpStreamType.Start,
+      payload,
+    );
   },
 );
 const io = new Server(server, {
@@ -287,14 +300,6 @@ io.on('connection', (socket: Socket) => {
 
       // ok for request transportation
       if (type === RunnerClientHttpStreamType.Start) {
-        const startLine = `${req.method} ${req.url} HTTP/${req.httpVersion}`;
-        const headers = getHeaders(req);
-        socket.emit(
-          RunnerServerEvent.HttpRequest,
-          uuid,
-          RunnerClientHttpStreamType.Data,
-          [startLine, headers.join(httpNewLine), '', ''].join(httpNewLine),
-        );
         req.on('data', (chunk) =>
           socket.emit(RunnerServerEvent.HttpRequest, uuid, RunnerClientHttpStreamType.Data, chunk),
         );
@@ -304,13 +309,20 @@ io.on('connection', (socket: Socket) => {
         return;
       }
 
+      if (type === RunnerClientHttpStreamType.Response) {
+        const { status, headers } = data as RunnerClientHttpResponse;
+        res.statusCode = status ?? 200;
+        Object.entries(headers).forEach(([key, value]) => value && res.setHeader(key, value));
+        return;
+      }
+
       if (type === RunnerClientHttpStreamType.Data) {
-        res.socket?.write(data);
+        res.write(data);
         return;
       }
 
       if (type === RunnerClientHttpStreamType.End) {
-        res.socket?.end();
+        res.end();
       }
 
       if (type === RunnerClientHttpStreamType.Error) {

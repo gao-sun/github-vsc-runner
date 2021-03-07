@@ -1,3 +1,5 @@
+import { OutgoingHttpHeaders } from 'http';
+import { IncomingHttpHeaders } from 'http2';
 import { Socket } from 'socket.io';
 
 export type Optional<T> = T | undefined;
@@ -26,10 +28,22 @@ export enum RunnerClientEvent {
 
 export enum RunnerClientHttpStreamType {
   Start = 'start',
+  Response = 'response',
   Data = 'data',
   Error = 'error',
   End = 'end',
 }
+
+export type RunnerClientHttpRequest = {
+  path?: string;
+  method?: string;
+  headers?: OutgoingHttpHeaders;
+};
+
+export type RunnerClientHttpResponse = {
+  status?: number;
+  headers: IncomingHttpHeaders;
+};
 
 export enum RunnerClientOS {
   Ubuntu_20_04 = 'ubuntu-20.04',
