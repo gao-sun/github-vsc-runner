@@ -9,4 +9,5 @@ export type Terminal = TerminalOptions & {
 export type RunnerSession = {
   socket: Socket;
   terminals: Terminal[];
+  portForwarding?: number;
 };

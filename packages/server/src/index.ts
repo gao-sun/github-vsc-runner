@@ -37,13 +37,7 @@ const pairedClientType: Record<ClientType, ClientType> = Object.freeze({
 
 const clientDict: Dictionary<string, Client> = {};
 const httpDict: Dictionary<string, [IncomingMessage, ServerResponse]> = {};
-const sessionDict: Dictionary<string, Session> = {
-  aaa: {
-    id: 'aaa',
-    clientDict: {} as Dictionary<string, any>,
-    clientOSDict: {} as Dictionary<string, any>,
-  },
-};
+const sessionDict: Dictionary<string, Session> = {};
 
 const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 21);
 const server = createServer(
@@ -89,7 +83,7 @@ const server = createServer(
 );
 const io = new Server(server, {
   cors: { origin: ['http://localhost:8080', 'https://localhost:8080'] },
-  transports: ['websocket'],
+  transports: ['websocket', 'polling'],
 });
 
 const isClientAndEventTypeMatching = (
@@ -207,7 +201,13 @@ io.on('connection', (socket: Socket) => {
       return;
     }
 
-    logger.verbose('[session %s] emit event %s from %s to %s', session.id, client.type, pairedType);
+    logger.verbose(
+      '[session %s] emit event %s from %s to %s',
+      session.id,
+      event,
+      client.type,
+      pairedType,
+    );
     pairedClient.emit(event, ...data);
   };
 
@@ -266,12 +266,15 @@ io.on('connection', (socket: Socket) => {
     VscClientEvent.FetchCurrentTerminals,
     VscClientEvent.SetTerminalDimensions,
     VscClientEvent.FSEvent,
+    VscClientEvent.FetchCurrentPortForwarding,
+    VscClientEvent.SetPortForwarding,
     RunnerClientEvent.Stdout,
     RunnerClientEvent.CurrentTerminals,
     RunnerClientEvent.TerminalClosed,
     RunnerClientEvent.FSEvent,
     RunnerClientEvent.FSEventError,
     RunnerClientEvent.FSTextSearchMatch,
+    RunnerClientEvent.CurrentPortForwarding,
   ].forEach((event) => {
     socket.on(event, (...data: unknown[]) => {
       emitEventToPairedClient(event, ...data);
@@ -288,7 +291,7 @@ io.on('connection', (socket: Socket) => {
 
   socket.on(
     RunnerClientEvent.HttpStream,
-    (uuid: string, type: RunnerClientHttpStreamType, data: any) => {
+    (uuid: string, type: RunnerClientHttpStreamType, data: unknown) => {
       const [req, res] = httpDict[uuid] ?? [];
 
       logger.debug('http stream [%s], uuid=%s', type, uuid);

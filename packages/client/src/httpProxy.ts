@@ -5,24 +5,39 @@ import {
   RunnerClientHttpResponse,
   RunnerClientHttpStreamType,
   RunnerServerEvent,
+  VscClientEvent,
 } from '@github-vsc-runner/core';
 import { Socket } from 'socket.io-client';
 import http from 'http';
 import logger from './logger';
+import { RunnerSession } from './types';
 
 const requestDict: Dictionary<string, http.ClientRequest> = {};
 
-export const registerHttpRequestHandlers = (socket: Socket): void => {
+export const registerHttpRequestHandlers = (socket: Socket, runner: RunnerSession): void => {
+  socket.on(VscClientEvent.FetchCurrentPortForwarding, () => {
+    socket.emit(RunnerClientEvent.CurrentPortForwarding, runner.portForwarding);
+  });
+
+  socket.on(VscClientEvent.SetPortForwarding, (port?: number) => {
+    logger.info('port forwarding to %s', port);
+    runner.portForwarding = port;
+  });
+
   socket.on(
     RunnerServerEvent.HttpRequest,
-    (uuid: string, type: RunnerClientHttpStreamType, data: any) => {
+    (uuid: string, type: RunnerClientHttpStreamType, data: unknown) => {
+      if (!runner.portForwarding) {
+        return;
+      }
+
       logger.verbose('request [%s], uuid=%s', type, uuid);
       logger.verbose(JSON.stringify(data));
 
       if (type === RunnerClientHttpStreamType.Start) {
         const { path, method, headers } = data as RunnerClientHttpRequest;
         const clientRequest = http.request(
-          { host: 'localhost', port: 8081, path, method, headers, timeout: 30000 },
+          { host: 'localhost', port: runner.portForwarding, path, method, headers, timeout: 30000 },
           (res) => {
             const payload: RunnerClientHttpResponse = {
               status: res.statusCode,

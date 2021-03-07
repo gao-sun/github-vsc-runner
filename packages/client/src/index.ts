@@ -28,7 +28,7 @@ logger.info(
 
 const socket = io(SERVER_ADDRESS || 'wss://localhost:3000', {
   rejectUnauthorized: process.env.NODE_ENV !== 'development',
-  transports: ['websocket'],
+  transports: ['websocket', 'polling'],
 });
 const runner: RunnerSession = {
   socket,
@@ -62,4 +62,4 @@ socket.on(VscClientEvent.TerminateSession, () => {
 
 registerTerminalEventHandlers(socket, runner, cwd);
 registerFSEventHandlers(socket, cwd);
-registerHttpRequestHandlers(socket);
+registerHttpRequestHandlers(socket, runner);

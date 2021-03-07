@@ -24,6 +24,7 @@ export enum RunnerClientEvent {
   FSEventError = 'runner-client-fs-event-error',
   FSTextSearchMatch = 'runner-client-fs-text-search-match',
   HttpStream = 'runner-client-http-stream',
+  CurrentPortForwarding = 'runner-client-current-port-forwarding',
 }
 
 export enum RunnerClientHttpStreamType {
@@ -69,6 +70,8 @@ export enum VscClientEvent {
   Cmd = 'vsc-cmd',
   CheckRunnerStatus = 'vsc-check-runner-status',
   FSEvent = 'vsc-fs-event',
+  FetchCurrentPortForwarding = 'vsc-fetch-current-port-forwarding',
+  SetPortForwarding = 'vsc-set-port-forwarding',
 }
 
 export type Client = {
