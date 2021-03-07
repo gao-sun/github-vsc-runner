@@ -43,7 +43,7 @@ jobs:
         if: ${{ !startsWith(github.event.inputs.os, 'windows') }}
         run: echo "$(yarn global bin)" >> $GITHUB_PATH
 
-       - name: Setup global path (Windows)
+      - name: Setup global path (Windows)
         if: ${{ startsWith(github.event.inputs.os, 'windows') }}
         run: $Env:Path += ";$(yarn global bin)"
 
