@@ -27,7 +27,7 @@ jobs:
     if: github.event.inputs.os == 'ubuntu-20.04'
     defaults:
       run:
-        working-directory: ./${{ github.event.inputs.repository || 'runner' }}
+        working-directory: ./runner
     steps:
       - uses: actions/setup-node@v1
         with:
