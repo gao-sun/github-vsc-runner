@@ -21,24 +21,8 @@ on:
         required: false
 
 jobs:
-  # https://github.community/t/feature-request-and-use-case-example-to-allow-matrix-in-if-s/126067/4
-  prejob:
-    runs-on: ubuntu-latest
-    outputs:
-      matrix: ${{ steps.set-os-matrix.outputs.matrix }}
-    steps:
-      - name: Set OS matrix
-        id: set-os-matrix
-        run: |
-          echo "::set-output name=matrix::{\"os\":[\"$(echo $RUNNER_OS)\"]}"
-        env:
-          RUNNER_OS: ${{ github.event.inputs.os }}
-
   runner-client:
-    needs: [prejob]
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix: ${{ fromJson(needs.prejob.outputs.matrix )}}
+    runs-on: ${{ github.event.inputs.os }}
 
     steps:
       - uses: actions/setup-node@v1
