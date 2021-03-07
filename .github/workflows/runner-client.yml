@@ -36,7 +36,7 @@ jobs:
         with:
           repository: ${{ github.event.inputs.repository }}
           ref: ${{ github.event.inputs.ref }}
-          token: ${{ secrets.GITHUB_PAT }}
+          token: ${{ secrets.RUNNER_ACTIONS_PAT }}
 
       - name: Install runner client
         run: |
