@@ -45,7 +45,10 @@ jobs:
 
       - name: Setup global path (Windows)
         if: ${{ startsWith(github.event.inputs.os, 'windows') }}
-        run: $Env:Path += ";$(yarn global bin)"
+        run: |
+          $yarnPath = & yarn global bin
+          $path = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
+          [System.Environment]::SetEnvironmentVariable("PATH", "$path;$yarnPath", [System.EnvironmentVariableTarget]::User)
 
       - name: Start client
         run: gvsc-client
