@@ -32,7 +32,7 @@ jobs:
           node-version: "14"
 
       - uses: actions/checkout@v2
-        if: !!github.event.inputs.repository
+        if: github.event.inputs.repository
         with:
           repository: ${{ github.event.inputs.repository }}
           ref: ${{ github.event.inputs.ref }}
