@@ -36,19 +36,16 @@ jobs:
           ref: ${{ github.event.inputs.ref }}
           token: ${{ secrets.RUNNER_ACTIONS_PAT }}
 
-      - name: Install runner client
-        run: yarn global add @github-vsc-runner/client
-
-      - name: Setup global path (unix-like)
+      - name: Install runner client (unix-like)
         if: ${{ !startsWith(github.event.inputs.os, 'windows') }}
-        run: echo "$(yarn global bin)" >> $GITHUB_PATH
+        run: |
+          yarn global add @github-vsc-runner/client
+          echo "$(yarn global bin)" >> $GITHUB_PATH
 
-      - name: Setup global path (Windows)
+      - name: Install runner client (Windows)
         if: ${{ startsWith(github.event.inputs.os, 'windows') }}
         run: |
-          $yarnPath = & yarn global bin
-          $path = [System.Environment]::GetEnvironmentVariable("PATH", [System.EnvironmentVariableTarget]::User)
-          [System.Environment]::SetEnvironmentVariable("PATH", "$path;$yarnPath", [System.EnvironmentVariableTarget]::User)
+          npm i -g @github-vsc-runner/client
 
       - name: Start client
         run: gvsc-client
