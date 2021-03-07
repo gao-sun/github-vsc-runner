@@ -20,11 +20,14 @@ on:
         description: "The branch, tag or SHA to checkout"
         required: false
 
-# consider using matrix
 jobs:
-  ubuntu-20-04:
-    runs-on: ubuntu-20.04
-    if: github.event.inputs.os == 'ubuntu-20.04'
+  runner-client:
+    runs-on: ${{ matrix.os }}
+    strategy:
+    matrix:
+      os: [ubuntu-18.04, ubuntu-20.04, macos-11.0, macos-10.15, windows-2019]
+
+    if: github.event.inputs.os == matrix.os
 
     steps:
       - uses: actions/setup-node@v1
@@ -37,27 +40,6 @@ jobs:
           repository: ${{ github.event.inputs.repository }}
           ref: ${{ github.event.inputs.ref }}
           token: ${{ secrets.RUNNER_ACTIONS_PAT }}
-
-      - name: Install runner client
-        run: |
-          yarn global add @github-vsc-runner/client
-          echo "$(yarn global bin)" >> $GITHUB_PATH
-
-      - name: Start client
-        run: gvsc-client
-        env:
-          SESSION_ID: ${{ github.event.inputs.sessionId }}
-          SESSION_OS: ${{ github.event.inputs.os }}
-          SERVER_ADDRESS: ${{ github.event.inputs.serverAddress }}
-
-  ubuntu-18-04:
-    runs-on: ubuntu-18.04
-    if: github.event.inputs.os == 'ubuntu-18.04'
-
-    steps:
-      - uses: actions/setup-node@v1
-        with:
-          node-version: "14"
 
       - name: Install runner client
         run: |
