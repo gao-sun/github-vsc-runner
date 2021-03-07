@@ -28,6 +28,7 @@ export const registerHttpRequestHandlers = (socket: Socket, runner: RunnerSessio
     RunnerServerEvent.HttpRequest,
     (uuid: string, type: RunnerClientHttpStreamType, data: unknown) => {
       if (!runner.portForwarding) {
+        socket.emit(RunnerClientEvent.HttpStream, uuid, RunnerClientHttpStreamType.Error);
         return;
       }
 
