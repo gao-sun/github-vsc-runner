@@ -24,7 +24,7 @@ import logger from './logger';
 import { customAlphabet } from 'nanoid';
 import { readFileSync } from 'fs';
 import { IncomingMessage, ServerResponse } from 'http';
-import { send404 } from './httpProxy';
+import { send404, send503 } from './httpProxy';
 
 dotenv.config();
 
@@ -39,18 +39,21 @@ const clientDict: Dictionary<string, Client> = {};
 const httpDict: Dictionary<string, [IncomingMessage, ServerResponse]> = {};
 const sessionDict: Dictionary<string, Session> = {};
 
-const nanoid = customAlphabet('0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz', 21);
+const nanoid = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 24);
 const server = createServer(
   {
     key: readFileSync(SSL_KEY_PATH || './cert/runner.github-vsc.localhost-key.pem'),
     cert: readFileSync(SSL_CERT_PATH || './cert/runner.github-vsc.localhost.pem'),
   },
   async (req, res) => {
-    logger.verbose('request from %s', req.socket.remoteAddress);
-    logger.verbose('[%s] %s', req.method, req.url);
     const domains = req.headers.host?.split('.') ?? [];
 
+    logger.verbose('request from %s', req.socket.remoteAddress);
+    logger.verbose('[%s] %s', req.method, req.url);
+    logger.verbose('domains=%s', JSON.stringify(domains));
+
     if (!(domains.length >= 2 && domains[1].startsWith('runner'))) {
+      logger.verbose('domains not valid');
       send404(res);
       return;
     }
@@ -59,8 +62,15 @@ const server = createServer(
     const session = sessionDict[sessionId];
     const runnerClient = session?.clientDict[ClientType.Runner];
 
-    if (!session || !runnerClient) {
+    if (!session) {
+      logger.verbose('session not found');
       send404(res);
+      return;
+    }
+
+    if (!runnerClient) {
+      logger.verbose('runner client not found');
+      send503(res);
       return;
     }
 
@@ -329,10 +339,7 @@ io.on('connection', (socket: Socket) => {
       }
 
       if (type === RunnerClientHttpStreamType.Error) {
-        res.statusCode = 503;
-        res.write('503 service unavailable\n');
-        res.write(JSON.stringify(data));
-        res.end();
+        send503(res, data);
       }
 
       delete httpDict[uuid];

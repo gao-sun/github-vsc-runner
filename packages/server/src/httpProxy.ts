@@ -15,3 +15,13 @@ export const send404 = (res: ServerResponse): void => {
   res.write('404 not found');
   res.end();
 };
+
+export const send503 = (res: ServerResponse, error?: unknown): void => {
+  res.statusCode = 503;
+  res.write('503 service unavailable');
+  if (error) {
+    res.write('\r\n');
+    res.write(JSON.stringify(error));
+  }
+  res.end();
+};
