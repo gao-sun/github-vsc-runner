@@ -94,7 +94,6 @@ export type TerminalOptions = TerminalDimensions & {
 
 export type Session = {
   id: string;
-  portForwarding?: number;
   clientDict: Dictionary<ClientType, Socket>;
   clientOSDict: Dictionary<ClientType, RunnerClientOS>;
 };

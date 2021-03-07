@@ -12,7 +12,6 @@ import {
   RunnerClientStatus,
   RunnerServerEvent,
   VscClientEvent,
-  Session,
   Dictionary,
   RunnerClientOS,
   RunnerClientHttpStreamType,
@@ -25,8 +24,10 @@ import { customAlphabet } from 'nanoid';
 import { readFileSync } from 'fs';
 import { IncomingMessage, ServerResponse } from 'http';
 import { send404, send503 } from './httpProxy';
+import { deleteSession, getSession, loadSessionDict, setSession } from './sessionDict';
 
 dotenv.config();
+loadSessionDict();
 
 const { SERVER_PORT, SSL_KEY_PATH, SSL_CERT_PATH } = process.env;
 
@@ -37,7 +38,6 @@ const pairedClientType: Record<ClientType, ClientType> = Object.freeze({
 
 const clientDict: Dictionary<string, Client> = {};
 const httpDict: Dictionary<string, [IncomingMessage, ServerResponse]> = {};
-const sessionDict: Dictionary<string, Session> = {};
 
 const nanoid = customAlphabet('0123456789abcdefghijklmnopqrstuvwxyz', 24);
 const server = createServer(
@@ -59,7 +59,7 @@ const server = createServer(
     }
 
     const sessionId = domains[0];
-    const session = sessionDict[sessionId];
+    const session = getSession(sessionId);
     const runnerClient = session?.clientDict[ClientType.Runner];
 
     if (!session) {
@@ -149,7 +149,7 @@ io.on('connection', (socket: Socket) => {
       return;
     }
 
-    const session = sessionDict[sessionId];
+    const session = getSession(sessionId);
     if (!session) {
       logger.warn('session %s does not exist or has been terminated, skipping', sessionId);
 
@@ -192,7 +192,7 @@ io.on('connection', (socket: Socket) => {
       return;
     }
 
-    const session = sessionDict[client.sessionId];
+    const session = getSession(client.sessionId);
 
     if (!session) {
       logger.warn('session %s is not active, skipping', client.sessionId);
@@ -222,7 +222,7 @@ io.on('connection', (socket: Socket) => {
   };
 
   const emitRunnerClientStatus = (sessionId: string) => {
-    const session = sessionDict[sessionId];
+    const session = getSession(sessionId);
 
     if (!session) {
       return;
@@ -253,11 +253,11 @@ io.on('connection', (socket: Socket) => {
       logger.info('received vsc client %s with new session request', socket.id);
 
       const id = nanoid();
-      sessionDict[id] = {
+      setSession(id, {
         id,
         clientDict: {} as Dictionary<ClientType, Socket>,
         clientOSDict: {} as Dictionary<ClientType, RunnerClientOS>,
-      };
+      });
 
       setClientType(id, ClientType.VSC);
       logger.info('created new session %s', id);
@@ -353,7 +353,7 @@ io.on('connection', (socket: Socket) => {
 
     logger.warn('vsc client requested to terminate session', client.sessionId);
     emitEventToPairedClient(VscClientEvent.TerminateSession);
-    delete sessionDict[client.sessionId];
+    deleteSession(client.sessionId);
   });
 
   socket.on('disconnect', () => {
@@ -362,7 +362,7 @@ io.on('connection', (socket: Socket) => {
     if (client.type && client.sessionId) {
       logger.info('removing session %s to client %s id mapping', client.sessionId, client.type);
 
-      const session = sessionDict[client.sessionId];
+      const session = getSession(client.sessionId);
 
       if (session) {
         delete session.clientDict[client.type];
@@ -372,7 +372,7 @@ io.on('connection', (socket: Socket) => {
           const pairedClient = session.clientDict[pairedClientType[ClientType.Runner]];
           pairedClient?.emit(RunnerServerEvent.RunnerStatus, RunnerClientStatus.Offline);
           pairedClient?.emit(RunnerServerEvent.SessionTerminated);
-          delete sessionDict[client.sessionId];
+          deleteSession(client.sessionId);
         }
       }
     }
