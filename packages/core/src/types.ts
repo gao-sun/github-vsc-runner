@@ -49,8 +49,9 @@ export type RunnerClientHttpResponse = {
 export enum RunnerClientOS {
   Ubuntu_20_04 = 'ubuntu-20.04',
   Ubuntu_18_04 = 'ubuntu-18.04',
-  macOS_11_0 = 'macOS-11.0',
-  macOS_10_15 = 'macOS-10.15',
+  macOS_11_0 = 'macos-11.0',
+  macOS_10_15 = 'macos-10.15',
+  Windows_2019 = 'windows-2019',
 }
 
 export enum RunnerServerEvent {
