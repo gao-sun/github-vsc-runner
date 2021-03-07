@@ -37,9 +37,15 @@ jobs:
           token: ${{ secrets.RUNNER_ACTIONS_PAT }}
 
       - name: Install runner client
-        run: |
-          yarn global add @github-vsc-runner/client
-          echo "$(yarn global bin)" >> $GITHUB_PATH
+        run: yarn global add @github-vsc-runner/clien
+
+      - name: Setup global path (unix-like)
+        if: ${{ !startsWith(github.event.inputs.os, 'windows') }}
+        run: echo "$(yarn global bin)" >> $GITHUB_PATH
+
+       - name: Setup global path (Windows)
+        if: ${{ startsWith(github.event.inputs.os, 'windows') }}
+        run: $Env:Path += ";$(yarn global bin)"
 
       - name: Start client
         run: gvsc-client
