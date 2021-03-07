@@ -13,6 +13,12 @@ on:
       sessionId:
         description: "Runner server session ID"
         required: true
+      repository:
+        description: "GitHub repository name with owner. E.g. actions/checkout"
+        required: false
+      ref:
+        description: "The branch, tag or SHA to checkout"
+        required: false
 
 # consider using matrix
 jobs:
@@ -24,6 +30,13 @@ jobs:
       - uses: actions/setup-node@v1
         with:
           node-version: "14"
+
+      - uses: actions/checkout@v2
+        if: !!github.event.inputs.repository
+        with:
+          repository: ${{ github.event.inputs.repository }}
+          ref: ${{ github.event.inputs.ref }}
+          token: ${{ secrets.GITHUB_PAT }}
 
       - name: Install runner client
         run: |
