@@ -30,7 +30,7 @@ jobs:
       - name: Set OS matrix
         id: set-os-matrix
         run: |
-          echo "::set-output name=matrix::{\"os\":[\"$RUNNER_OS\"]}"
+          echo "::set-output name=matrix::{\"os\":[\"$(echo $RUNNER_OS)\"]}"
         env:
           RUNNER_OS: ${{ github.event.inputs.os }}
 
