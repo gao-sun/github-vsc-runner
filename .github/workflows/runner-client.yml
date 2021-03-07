@@ -37,7 +37,7 @@ jobs:
           token: ${{ secrets.RUNNER_ACTIONS_PAT }}
 
       - name: Install runner client
-        run: yarn global add @github-vsc-runner/clien
+        run: yarn global add @github-vsc-runner/client
 
       - name: Setup global path (unix-like)
         if: ${{ !startsWith(github.event.inputs.os, 'windows') }}
