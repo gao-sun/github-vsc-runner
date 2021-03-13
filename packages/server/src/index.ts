@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 import { createServer } from 'https';
 import dotenv from 'dotenv';
 import { Server, Socket } from 'socket.io';

@@ -6,7 +6,7 @@ import { RunnerClientEvent, VscClientEvent } from '@github-vsc-runner/core';
 
 import logger from './logger';
 import { RunnerSession } from './types';
-import { closeTerminal, registerTerminalEventHandlers } from './terminal';
+import { registerTerminalEventHandlers } from './terminal';
 import { registerFSEventHandlers } from './fs';
 import { registerHttpRequestHandlers } from './httpProxy';
 
