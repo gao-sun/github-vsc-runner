@@ -51,7 +51,6 @@ socket.on('connect', () => {
 
 socket.on('disconnect', () => {
   logger.warn('disconnected');
-  runner.terminals.forEach((terminal) => closeTerminal(terminal));
 });
 
 socket.on(VscClientEvent.TerminateSession, () => {
