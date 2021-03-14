@@ -55,10 +55,13 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.RUNNER_ACTIONS_PAT }}
 
-      - name: Configure Git
-        run: |
-          git config user.email "${{ fromJson(steps.get_user_info.outputs.data).email }}"
-          git config user.name "${{ fromJson(steps.get_user_info.outputs.data).name || fromJson(steps.get_user_info.outputs.data).login }}"
+      - name: Configure Git email if possible
+        if: fromJson(steps.get_user_info.outputs.data).email != ''
+        run: git config user.email "${{ fromJson(steps.get_user_info.outputs.data).email }}"
+
+      - name: Configure Git name if possible
+        if: fromJson(steps.get_user_info.outputs.data).name != ''
+        run: git config user.name "${{ fromJson(steps.get_user_info.outputs.data).name }}"
 
       - name: Start client
         run: gvsc-client
