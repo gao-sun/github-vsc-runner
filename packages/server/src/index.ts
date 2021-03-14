@@ -94,7 +94,14 @@ const server = createServer(
   },
 );
 const io = new Server(server, {
-  cors: { origin: ['http://localhost:8080', 'https://localhost:8080'] },
+  cors: {
+    origin: [
+      'http://localhost:8080',
+      'https://localhost:8080',
+      'https://github-vsc.com',
+      'https://*.github-vsc.com',
+    ],
+  },
   transports: ['websocket', 'polling'],
 });
 
