@@ -47,6 +47,19 @@ jobs:
         run: |
           npm i -g @github-vsc-runner/client
 
+      - name: Get GitHub user info
+        uses: octokit/request-action@v2.x
+        id: get_user_info
+        with:
+          route: GET /user
+        env:
+          GITHUB_TOKEN: ${{ secrets.RUNNER_ACTIONS_PAT }}
+
+      - name: Configure Git
+        run: |
+          git config user.email "${{ fromJson(steps.get_user_info.outputs.data).email }}"
+          git config user.name "${{ fromJson(steps.get_user_info.outputs.data).name || fromJson(steps.get_user_info.outputs.data).login }}"
+
       - name: Start client
         run: gvsc-client
         env:
